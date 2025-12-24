@@ -34,6 +34,7 @@ interface Product {
   price: number;
   original_price: number | null;
   deep_link_scheme: string | null;
+  image_url: string | null;
 }
 
 const features = [
@@ -170,8 +171,21 @@ const Product = () => {
       <section className="py-12">
         <div className="container">
           <div className="grid gap-8 lg:grid-cols-2">
-            {/* Features */}
+            {/* Product Image & Features */}
             <div>
+              {/* Product Image */}
+              {loading ? (
+                <Skeleton className="w-full aspect-video rounded-xl mb-8" />
+              ) : product?.image_url ? (
+                <div className="mb-8 rounded-xl overflow-hidden border border-border shadow-lg">
+                  <img
+                    src={product.image_url}
+                    alt={product.name}
+                    className="w-full h-auto object-cover"
+                  />
+                </div>
+              ) : null}
+
               <h2 className="text-title-lg text-foreground mb-6">
                 ویژگی‌های دوره
               </h2>
