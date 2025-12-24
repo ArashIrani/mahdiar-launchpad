@@ -95,16 +95,42 @@ const Product = () => {
       return;
     }
 
-    setSubmitting(true);
+    if (!product) {
+      toast.error("محصول یافت نشد");
+      return;
+    }
 
-    // TODO: Call ZarinPal Edge Function
+    setSubmitting(true);
     toast.info("در حال اتصال به درگاه پرداخت...");
-    
-    // Simulate for now
-    setTimeout(() => {
+
+    try {
+      const { data, error } = await supabase.functions.invoke("zarinpal-create", {
+        body: {
+          product_id: product.id,
+          customer_email: email,
+          customer_phone: phone,
+        },
+      });
+
+      if (error) {
+        console.error("Payment error:", error);
+        toast.error("خطا در اتصال به درگاه پرداخت");
+        setSubmitting(false);
+        return;
+      }
+
+      if (data?.payment_url) {
+        // Redirect to ZarinPal payment page
+        window.location.href = data.payment_url;
+      } else {
+        toast.error(data?.error || "خطا در ایجاد لینک پرداخت");
+        setSubmitting(false);
+      }
+    } catch (err) {
+      console.error("Error:", err);
+      toast.error("خطا در ارتباط با سرور");
       setSubmitting(false);
-      toast.success("آماده اتصال به درگاه پرداخت");
-    }, 1500);
+    }
   };
 
   const discount = product?.original_price 
