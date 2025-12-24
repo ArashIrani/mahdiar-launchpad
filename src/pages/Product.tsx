@@ -17,7 +17,9 @@ import {
   Headphones, 
   Smartphone,
   CheckCircle,
-  ShieldCheck
+  ShieldCheck,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 import { z } from "zod";
 
@@ -46,9 +48,17 @@ const features = [
   { icon: Smartphone, text: "اپلیکیشن موبایل" },
 ];
 
+interface ProductImage {
+  id: string;
+  image_url: string;
+  display_order: number;
+}
+
 const Product = () => {
   const navigate = useNavigate();
   const [product, setProduct] = useState<Product | null>(null);
+  const [galleryImages, setGalleryImages] = useState<ProductImage[]>([]);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [email, setEmail] = useState("");
@@ -69,12 +79,36 @@ const Product = () => {
         toast.error("خطا در بارگذاری محصول");
       } else if (data) {
         setProduct(data);
+        // Fetch gallery images
+        const { data: imagesData } = await supabase
+          .from("product_images")
+          .select("*")
+          .eq("product_id", data.id)
+          .order("display_order", { ascending: true });
+        
+        if (imagesData && imagesData.length > 0) {
+          setGalleryImages(imagesData);
+        }
       }
       setLoading(false);
     };
 
     fetchProduct();
   }, []);
+
+  // Combine main image with gallery images
+  const allImages = [
+    ...(product?.image_url ? [{ id: "main", image_url: product.image_url, display_order: -1 }] : []),
+    ...galleryImages
+  ];
+
+  const nextImage = () => {
+    setCurrentImageIndex((prev) => (prev + 1) % allImages.length);
+  };
+
+  const prevImage = () => {
+    setCurrentImageIndex((prev) => (prev - 1 + allImages.length) % allImages.length);
+  };
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("fa-IR").format(price);
@@ -173,16 +207,56 @@ const Product = () => {
           <div className="grid gap-8 lg:grid-cols-2">
             {/* Product Image & Features */}
             <div>
-              {/* Product Image */}
+              {/* Product Image Gallery */}
               {loading ? (
                 <Skeleton className="w-full aspect-video rounded-xl mb-8" />
-              ) : product?.image_url ? (
-                <div className="mb-8 rounded-xl overflow-hidden border border-border shadow-lg">
-                  <img
-                    src={product.image_url}
-                    alt={product.name}
-                    className="w-full h-auto object-cover"
-                  />
+              ) : allImages.length > 0 ? (
+                <div className="mb-8">
+                  <div className="relative rounded-xl overflow-hidden border border-border shadow-lg">
+                    <img
+                      src={allImages[currentImageIndex]?.image_url}
+                      alt={product?.name}
+                      className="w-full h-auto object-cover"
+                    />
+                    {allImages.length > 1 && (
+                      <>
+                        <button
+                          onClick={prevImage}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 bg-background/80 hover:bg-background p-2 rounded-full shadow-md transition-colors"
+                        >
+                          <ChevronRight className="h-5 w-5" />
+                        </button>
+                        <button
+                          onClick={nextImage}
+                          className="absolute left-2 top-1/2 -translate-y-1/2 bg-background/80 hover:bg-background p-2 rounded-full shadow-md transition-colors"
+                        >
+                          <ChevronLeft className="h-5 w-5" />
+                        </button>
+                      </>
+                    )}
+                  </div>
+                  {/* Thumbnails */}
+                  {allImages.length > 1 && (
+                    <div className="flex gap-2 mt-4 overflow-x-auto pb-2">
+                      {allImages.map((img, index) => (
+                        <button
+                          key={img.id}
+                          onClick={() => setCurrentImageIndex(index)}
+                          className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${
+                            index === currentImageIndex
+                              ? "border-primary"
+                              : "border-border hover:border-primary/50"
+                          }`}
+                        >
+                          <img
+                            src={img.image_url}
+                            alt={`تصویر ${index + 1}`}
+                            className="w-full h-full object-cover"
+                          />
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ) : null}
 
