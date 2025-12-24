@@ -1,6 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from "recharts";
-import { Package, Key, TrendingUp, AlertCircle, ShoppingBag, Calendar } from "lucide-react";
+import { Package, Key, TrendingUp, AlertCircle, ShoppingBag, Calendar, FileDown } from "lucide-react";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 interface Order {
   id: string;
@@ -112,8 +115,105 @@ const DashboardStats = ({ orders, licenses, products }: DashboardStatsProps) => 
     return amount.toLocaleString("fa-IR") + " تومان";
   };
 
+  // Export to PDF function
+  const exportToPDF = () => {
+    const doc = new jsPDF();
+    
+    // Set RTL direction
+    doc.setR2L(true);
+    
+    // Title
+    doc.setFontSize(18);
+    doc.text("Sales Report - Gozaresh Forush", 105, 20, { align: "center" });
+    
+    // Date
+    doc.setFontSize(10);
+    const today = new Date().toLocaleDateString("fa-IR");
+    doc.text(`Date: ${today}`, 190, 30, { align: "right" });
+    
+    // Summary stats
+    doc.setFontSize(14);
+    doc.text("Summary Statistics", 190, 45, { align: "right" });
+    
+    autoTable(doc, {
+      startY: 50,
+      head: [["Metric", "Value"]],
+      body: [
+        ["Total Revenue", `${totalRevenue.toLocaleString()} Toman`],
+        ["Total Orders", `${orders.length}`],
+        ["Completed Orders", `${completedOrders.length}`],
+        ["Active Licenses", `${activeLicenses}`],
+        ["Revoked Licenses", `${revokedLicenses}`],
+      ],
+      styles: { halign: "right" },
+      headStyles: { halign: "center", fillColor: [100, 100, 100] },
+    });
+    
+    // Sales by product
+    const finalY1 = (doc as any).lastAutoTable?.finalY || 100;
+    doc.setFontSize(14);
+    doc.text("Sales by Product", 190, finalY1 + 15, { align: "right" });
+    
+    autoTable(doc, {
+      startY: finalY1 + 20,
+      head: [["Product Name", "Orders Count", "Total Amount"]],
+      body: productSalesData.map((p) => [
+        p.name,
+        p.count.toString(),
+        `${p.amount.toLocaleString()} Toman`,
+      ]),
+      styles: { halign: "right" },
+      headStyles: { halign: "center", fillColor: [100, 100, 100] },
+    });
+    
+    // Last 7 days
+    const finalY2 = (doc as any).lastAutoTable?.finalY || 150;
+    doc.setFontSize(14);
+    doc.text("Last 7 Days Sales", 190, finalY2 + 15, { align: "right" });
+    
+    autoTable(doc, {
+      startY: finalY2 + 20,
+      head: [["Date", "Amount"]],
+      body: salesData.map((d) => [
+        d.date,
+        `${(d.amount * 1000).toLocaleString()} Toman`,
+      ]),
+      styles: { halign: "right" },
+      headStyles: { halign: "center", fillColor: [100, 100, 100] },
+    });
+    
+    // Monthly sales (new page)
+    doc.addPage();
+    doc.setFontSize(14);
+    doc.text("Monthly Sales (Last 12 Months)", 190, 20, { align: "right" });
+    
+    autoTable(doc, {
+      startY: 25,
+      head: [["Month", "Orders Count", "Total Amount"]],
+      body: monthlyData.map((m) => [
+        m.month,
+        m.count.toString(),
+        `${(m.amount * 1000000).toLocaleString()} Toman`,
+      ]),
+      styles: { halign: "right" },
+      headStyles: { halign: "center", fillColor: [100, 100, 100] },
+    });
+    
+    // Save
+    doc.save(`sales-report-${new Date().toISOString().split("T")[0]}.pdf`);
+  };
+
   return (
     <div className="space-y-6">
+      {/* Header with export button */}
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold">آمار داشبورد</h2>
+        <Button onClick={exportToPDF} variant="outline" className="gap-2">
+          <FileDown className="h-4 w-4" />
+          صادرات PDF
+        </Button>
+      </div>
+      
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
