@@ -11,6 +11,23 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/components/ui/sonner";
 import { Loader2, Upload, Trash2, GripVertical, Image as ImageIcon } from "lucide-react";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  rectSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 interface ProductImage {
   id: string;
@@ -25,6 +42,59 @@ interface ProductGalleryDialogProps {
   productName: string;
 }
 
+interface SortableImageProps {
+  image: ProductImage;
+  onDelete: (image: ProductImage) => void;
+}
+
+const SortableImage = ({ image, onDelete }: SortableImageProps) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: image.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="relative group rounded-lg overflow-hidden border border-border bg-card"
+    >
+      <div
+        {...attributes}
+        {...listeners}
+        className="absolute top-2 right-2 z-10 bg-background/80 p-1 rounded cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity"
+      >
+        <GripVertical className="h-4 w-4 text-muted-foreground" />
+      </div>
+      <img
+        src={image.image_url}
+        alt="Product"
+        className="w-full aspect-square object-cover"
+      />
+      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+        <Button
+          variant="destructive"
+          size="sm"
+          onClick={() => onDelete(image)}
+        >
+          <Trash2 className="h-4 w-4 ml-1" />
+          حذف
+        </Button>
+      </div>
+    </div>
+  );
+};
+
 const ProductGalleryDialog = ({
   open,
   onOpenChange,
@@ -34,6 +104,17 @@ const ProductGalleryDialog = ({
   const [images, setImages] = useState<ProductImage[]>([]);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   useEffect(() => {
     if (open && productId) {
@@ -55,6 +136,35 @@ const ProductGalleryDialog = ({
       setImages(data || []);
     }
     setLoading(false);
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      const oldIndex = images.findIndex((img) => img.id === active.id);
+      const newIndex = images.findIndex((img) => img.id === over.id);
+
+      const newImages = arrayMove(images, oldIndex, newIndex);
+      setImages(newImages);
+
+      // Update display_order in database
+      const updates = newImages.map((img, index) => ({
+        id: img.id,
+        display_order: index,
+        product_id: productId,
+        image_url: img.image_url,
+      }));
+
+      for (const update of updates) {
+        await supabase
+          .from("product_images")
+          .update({ display_order: update.display_order })
+          .eq("id", update.id);
+      }
+
+      toast.success("ترتیب تصاویر ذخیره شد");
+    }
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -142,7 +252,7 @@ const ProductGalleryDialog = ({
             گالری تصاویر - {productName}
           </DialogTitle>
           <DialogDescription>
-            تصاویر محصول را مدیریت کنید
+            تصاویر را با کشیدن و رها کردن مرتب کنید
           </DialogDescription>
         </DialogHeader>
 
@@ -176,7 +286,7 @@ const ProductGalleryDialog = ({
             </label>
           </div>
 
-          {/* Images Grid */}
+          {/* Images Grid with DnD */}
           {loading ? (
             <div className="flex justify-center py-8">
               <Loader2 className="h-6 w-6 animate-spin" />
@@ -186,30 +296,29 @@ const ProductGalleryDialog = ({
               تصویری وجود ندارد
             </p>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-              {images.map((image) => (
-                <div
-                  key={image.id}
-                  className="relative group rounded-lg overflow-hidden border border-border"
-                >
-                  <img
-                    src={image.image_url}
-                    alt="Product"
-                    className="w-full aspect-square object-cover"
-                  />
-                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => handleDelete(image)}
-                    >
-                      <Trash2 className="h-4 w-4 ml-1" />
-                      حذف
-                    </Button>
-                  </div>
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext items={images.map(img => img.id)} strategy={rectSortingStrategy}>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                  {images.map((image) => (
+                    <SortableImage
+                      key={image.id}
+                      image={image}
+                      onDelete={handleDelete}
+                    />
+                  ))}
                 </div>
-              ))}
-            </div>
+              </SortableContext>
+            </DndContext>
+          )}
+
+          {images.length > 1 && (
+            <p className="text-xs text-muted-foreground text-center">
+              💡 برای تغییر ترتیب، تصاویر را بکشید و رها کنید
+            </p>
           )}
         </div>
       </DialogContent>

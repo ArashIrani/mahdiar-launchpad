@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
-import { Package, Key, TrendingUp, AlertCircle, ShoppingBag } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from "recharts";
+import { Package, Key, TrendingUp, AlertCircle, ShoppingBag, Calendar } from "lucide-react";
 
 interface Order {
   id: string;
@@ -79,6 +79,32 @@ const DashboardStats = ({ orders, licenses, products }: DashboardStatsProps) => 
   };
 
   const productSalesData = getSalesByProduct();
+
+  // Get last 12 months sales data
+  const getLast12MonthsSales = () => {
+    const months: { month: string; amount: number; count: number }[] = [];
+    const now = new Date();
+
+    for (let i = 11; i >= 0; i--) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const year = date.getFullYear();
+      const month = date.getMonth();
+      
+      const monthOrders = completedOrders.filter((o) => {
+        const orderDate = new Date(o.created_at);
+        return orderDate.getFullYear() === year && orderDate.getMonth() === month;
+      });
+
+      months.push({
+        month: date.toLocaleDateString("fa-IR", { month: "short" }),
+        amount: monthOrders.reduce((sum, o) => sum + o.amount, 0) / 1000000,
+        count: monthOrders.length,
+      });
+    }
+    return months;
+  };
+
+  const monthlyData = getLast12MonthsSales();
 
   const salesData = getLast7DaysSales();
 
@@ -283,6 +309,68 @@ const DashboardStats = ({ orders, licenses, products }: DashboardStatsProps) => 
                   لایسنسی وجود ندارد
                 </div>
               )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Monthly Sales Chart */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Calendar className="h-4 w-4" />
+              گزارش فروش ماهانه
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[300px]">
+              {monthlyData.some((d) => d.amount > 0) ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={monthlyData}>
+                    <XAxis dataKey="month" fontSize={12} />
+                    <YAxis
+                      fontSize={12}
+                      tickFormatter={(v) => `${v}M`}
+                    />
+                    <Tooltip
+                      formatter={(value: number, name: string) => {
+                        if (name === "amount") return [`${(value * 1000000).toLocaleString("fa-IR")} تومان`, "مبلغ"];
+                        return [value, "تعداد"];
+                      }}
+                      labelFormatter={(label) => `ماه: ${label}`}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="amount"
+                      stroke="hsl(var(--primary))"
+                      strokeWidth={2}
+                      dot={{ fill: "hsl(var(--primary))", strokeWidth: 2 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-full text-muted-foreground">
+                  داده‌ای برای نمایش وجود ندارد
+                </div>
+              )}
+            </div>
+            {/* Monthly summary */}
+            <div className="mt-4 grid grid-cols-3 gap-4 text-center">
+              <div className="p-3 rounded-lg bg-muted/50">
+                <p className="text-xs text-muted-foreground">ماه جاری</p>
+                <p className="text-lg font-bold">
+                  {formatPrice(monthlyData[11]?.amount * 1000000 || 0)}
+                </p>
+              </div>
+              <div className="p-3 rounded-lg bg-muted/50">
+                <p className="text-xs text-muted-foreground">ماه گذشته</p>
+                <p className="text-lg font-bold">
+                  {formatPrice(monthlyData[10]?.amount * 1000000 || 0)}
+                </p>
+              </div>
+              <div className="p-3 rounded-lg bg-muted/50">
+                <p className="text-xs text-muted-foreground">سفارشات ماه</p>
+                <p className="text-lg font-bold">{monthlyData[11]?.count || 0}</p>
+              </div>
             </div>
           </CardContent>
         </Card>
