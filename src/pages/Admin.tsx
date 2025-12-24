@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, LogOut, Package, Key, AlertTriangle, Eye, CalendarPlus, Ban, MoreHorizontal, RefreshCw, Plus, LayoutDashboard } from "lucide-react";
+import { Loader2, LogOut, Package, Key, AlertTriangle, Eye, CalendarPlus, Ban, MoreHorizontal, RefreshCw, Plus, LayoutDashboard, Search } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,6 +19,14 @@ import RevokeLicenseDialog from "@/components/admin/RevokeLicenseDialog";
 import ReactivateLicenseDialog from "@/components/admin/ReactivateLicenseDialog";
 import CreateLicenseDialog from "@/components/admin/CreateLicenseDialog";
 import DashboardStats from "@/components/admin/DashboardStats";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface Order {
   id: string;
@@ -63,6 +71,34 @@ const Admin = () => {
   const [revokeDialogOpen, setRevokeDialogOpen] = useState(false);
   const [reactivateDialogOpen, setReactivateDialogOpen] = useState(false);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+
+  // Search and filter states
+  const [orderSearch, setOrderSearch] = useState("");
+  const [orderStatusFilter, setOrderStatusFilter] = useState("all");
+  const [licenseSearch, setLicenseSearch] = useState("");
+  const [licenseStatusFilter, setLicenseStatusFilter] = useState("all");
+
+  // Filtered data
+  const filteredOrders = orders.filter((order) => {
+    const matchesSearch =
+      orderSearch === "" ||
+      order.customer_email?.toLowerCase().includes(orderSearch.toLowerCase()) ||
+      order.customer_phone?.includes(orderSearch) ||
+      order.ref_id?.toLowerCase().includes(orderSearch.toLowerCase());
+    const matchesStatus =
+      orderStatusFilter === "all" || order.status === orderStatusFilter;
+    return matchesSearch && matchesStatus;
+  });
+
+  const filteredLicenses = licenses.filter((license) => {
+    const matchesSearch =
+      licenseSearch === "" ||
+      license.license_key.toLowerCase().includes(licenseSearch.toLowerCase()) ||
+      license.device_id?.toLowerCase().includes(licenseSearch.toLowerCase());
+    const matchesStatus =
+      licenseStatusFilter === "all" || license.status === licenseStatusFilter;
+    return matchesSearch && matchesStatus;
+  });
 
   useEffect(() => {
     if (isAdmin) {
@@ -221,12 +257,39 @@ const Admin = () => {
                 <CardDescription>لیست تمام سفارشات ثبت شده</CardDescription>
               </CardHeader>
               <CardContent>
+                {/* Search and Filter */}
+                <div className="flex flex-col sm:flex-row gap-4 mb-6">
+                  <div className="relative flex-1">
+                    <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="جستجو ایمیل، تلفن یا کد پیگیری..."
+                      value={orderSearch}
+                      onChange={(e) => setOrderSearch(e.target.value)}
+                      className="pr-10"
+                    />
+                  </div>
+                  <Select value={orderStatusFilter} onValueChange={setOrderStatusFilter}>
+                    <SelectTrigger className="w-full sm:w-[180px]">
+                      <SelectValue placeholder="وضعیت" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">همه وضعیت‌ها</SelectItem>
+                      <SelectItem value="completed">تکمیل شده</SelectItem>
+                      <SelectItem value="pending">در انتظار</SelectItem>
+                      <SelectItem value="failed">ناموفق</SelectItem>
+                      <SelectItem value="manual">دستی</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
                 {dataLoading ? (
                   <div className="flex justify-center py-8">
                     <Loader2 className="h-6 w-6 animate-spin" />
                   </div>
-                ) : orders.length === 0 ? (
-                  <p className="text-center text-muted-foreground py-8">سفارشی یافت نشد</p>
+                ) : filteredOrders.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-8">
+                    {orders.length === 0 ? "سفارشی یافت نشد" : "نتیجه‌ای یافت نشد"}
+                  </p>
                 ) : (
                   <div className="overflow-x-auto">
                     <Table>
@@ -241,7 +304,7 @@ const Admin = () => {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {orders.map((order) => (
+                        {filteredOrders.map((order) => (
                           <TableRow key={order.id}>
                             <TableCell className="font-medium">
                               {products[order.product_id] || "نامشخص"}
@@ -284,12 +347,37 @@ const Admin = () => {
                 </Button>
               </CardHeader>
               <CardContent>
+                {/* Search and Filter */}
+                <div className="flex flex-col sm:flex-row gap-4 mb-6">
+                  <div className="relative flex-1">
+                    <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="جستجو کلید لایسنس یا شناسه دستگاه..."
+                      value={licenseSearch}
+                      onChange={(e) => setLicenseSearch(e.target.value)}
+                      className="pr-10"
+                    />
+                  </div>
+                  <Select value={licenseStatusFilter} onValueChange={setLicenseStatusFilter}>
+                    <SelectTrigger className="w-full sm:w-[180px]">
+                      <SelectValue placeholder="وضعیت" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">همه وضعیت‌ها</SelectItem>
+                      <SelectItem value="active">فعال</SelectItem>
+                      <SelectItem value="revoked">لغو شده</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
                 {dataLoading ? (
                   <div className="flex justify-center py-8">
                     <Loader2 className="h-6 w-6 animate-spin" />
                   </div>
-                ) : licenses.length === 0 ? (
-                  <p className="text-center text-muted-foreground py-8">لایسنسی یافت نشد</p>
+                ) : filteredLicenses.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-8">
+                    {licenses.length === 0 ? "لایسنسی یافت نشد" : "نتیجه‌ای یافت نشد"}
+                  </p>
                 ) : (
                   <div className="overflow-x-auto">
                     <Table>
@@ -305,7 +393,7 @@ const Admin = () => {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {licenses.map((license) => (
+                        {filteredLicenses.map((license) => (
                           <TableRow key={license.id}>
                             <TableCell dir="ltr" className="font-mono text-xs max-w-[150px] truncate">
                               {license.license_key}
