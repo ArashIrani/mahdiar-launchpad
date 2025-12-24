@@ -25,6 +25,7 @@ interface Product {
   is_active: boolean;
   deep_link_scheme: string | null;
   image_url: string | null;
+  category: string | null;
 }
 
 interface ProductDialogProps {
@@ -50,6 +51,7 @@ const ProductDialog = ({
   const [originalPrice, setOriginalPrice] = useState("");
   const [isActive, setIsActive] = useState(true);
   const [deepLinkScheme, setDeepLinkScheme] = useState("");
+  const [category, setCategory] = useState("");
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -62,6 +64,7 @@ const ProductDialog = ({
         setOriginalPrice(product.original_price?.toString() || "");
         setIsActive(product.is_active);
         setDeepLinkScheme(product.deep_link_scheme || "");
+        setCategory(product.category || "");
         setImageUrl(product.image_url);
       } else {
         resetForm();
@@ -76,6 +79,7 @@ const ProductDialog = ({
     setOriginalPrice("");
     setIsActive(true);
     setDeepLinkScheme("");
+    setCategory("");
     setImageUrl(null);
   };
 
@@ -168,6 +172,7 @@ const ProductDialog = ({
       original_price: originalPrice ? Number(originalPrice) : null,
       is_active: isActive,
       deep_link_scheme: deepLinkScheme.trim() || null,
+      category: category.trim() || null,
       image_url: imageUrl,
     };
 
@@ -309,14 +314,24 @@ const ProductDialog = ({
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label>Deep Link Scheme</Label>
-            <Input
-              value={deepLinkScheme}
-              onChange={(e) => setDeepLinkScheme(e.target.value)}
-              placeholder="myapp://"
-              dir="ltr"
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>دسته‌بندی</Label>
+              <Input
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                placeholder="مثال: آموزشی"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Deep Link Scheme</Label>
+              <Input
+                value={deepLinkScheme}
+                onChange={(e) => setDeepLinkScheme(e.target.value)}
+                placeholder="myapp://"
+                dir="ltr"
+              />
+            </div>
           </div>
 
           <div className="flex items-center justify-between">
