@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, LogOut, Package, Key, AlertTriangle, Eye, CalendarPlus, Ban, MoreHorizontal } from "lucide-react";
+import { Loader2, LogOut, Package, Key, AlertTriangle, Eye, CalendarPlus, Ban, MoreHorizontal, RefreshCw } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,6 +16,7 @@ import {
 import LicenseDetailsDialog from "@/components/admin/LicenseDetailsDialog";
 import ExtendLicenseDialog from "@/components/admin/ExtendLicenseDialog";
 import RevokeLicenseDialog from "@/components/admin/RevokeLicenseDialog";
+import ReactivateLicenseDialog from "@/components/admin/ReactivateLicenseDialog";
 
 interface Order {
   id: string;
@@ -58,6 +59,7 @@ const Admin = () => {
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
   const [extendDialogOpen, setExtendDialogOpen] = useState(false);
   const [revokeDialogOpen, setRevokeDialogOpen] = useState(false);
+  const [reactivateDialogOpen, setReactivateDialogOpen] = useState(false);
 
   useEffect(() => {
     if (isAdmin) {
@@ -323,7 +325,7 @@ const Admin = () => {
                                     <CalendarPlus className="ml-2 h-4 w-4" />
                                     تمدید انقضا
                                   </DropdownMenuItem>
-                                  {license.status !== "revoked" && (
+                                  {license.status !== "revoked" ? (
                                     <DropdownMenuItem
                                       onClick={() => {
                                         setSelectedLicense(license);
@@ -333,6 +335,17 @@ const Admin = () => {
                                     >
                                       <Ban className="ml-2 h-4 w-4" />
                                       لغو لایسنس
+                                    </DropdownMenuItem>
+                                  ) : (
+                                    <DropdownMenuItem
+                                      onClick={() => {
+                                        setSelectedLicense(license);
+                                        setReactivateDialogOpen(true);
+                                      }}
+                                      className="text-primary focus:text-primary"
+                                    >
+                                      <RefreshCw className="ml-2 h-4 w-4" />
+                                      فعال‌سازی مجدد
                                     </DropdownMenuItem>
                                   )}
                                 </DropdownMenuContent>
@@ -371,6 +384,14 @@ const Admin = () => {
         licenseKey={selectedLicense?.license_key || ""}
         open={revokeDialogOpen}
         onOpenChange={setRevokeDialogOpen}
+        onSuccess={fetchData}
+      />
+
+      <ReactivateLicenseDialog
+        licenseId={selectedLicense?.id || null}
+        licenseKey={selectedLicense?.license_key || ""}
+        open={reactivateDialogOpen}
+        onOpenChange={setReactivateDialogOpen}
         onSuccess={fetchData}
       />
     </div>
