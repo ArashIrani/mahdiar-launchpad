@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, LogOut, Package, Key, AlertTriangle, Eye, CalendarPlus, Ban, MoreHorizontal, RefreshCw, Plus, LayoutDashboard, Search, Download } from "lucide-react";
+import { Loader2, LogOut, Package, Key, AlertTriangle, Eye, CalendarPlus, Ban, MoreHorizontal, RefreshCw, Plus, LayoutDashboard, Search, Download, Edit, Trash2, ShoppingBag } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,6 +19,8 @@ import RevokeLicenseDialog from "@/components/admin/RevokeLicenseDialog";
 import ReactivateLicenseDialog from "@/components/admin/ReactivateLicenseDialog";
 import CreateLicenseDialog from "@/components/admin/CreateLicenseDialog";
 import DashboardStats from "@/components/admin/DashboardStats";
+import ProductDialog from "@/components/admin/ProductDialog";
+import DeleteProductDialog from "@/components/admin/DeleteProductDialog";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -55,6 +57,12 @@ interface License {
 interface Product {
   id: string;
   name: string;
+  description: string | null;
+  price: number;
+  original_price: number | null;
+  is_active: boolean;
+  deep_link_scheme: string | null;
+  created_at: string;
 }
 
 const Admin = () => {
@@ -62,6 +70,7 @@ const Admin = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [licenses, setLicenses] = useState<License[]>([]);
   const [products, setProducts] = useState<Record<string, string>>({});
+  const [productsList, setProductsList] = useState<Product[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
 
   // License management states
@@ -71,6 +80,12 @@ const Admin = () => {
   const [revokeDialogOpen, setRevokeDialogOpen] = useState(false);
   const [reactivateDialogOpen, setReactivateDialogOpen] = useState(false);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+
+  // Product management states
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [productDialogOpen, setProductDialogOpen] = useState(false);
+  const [productDialogMode, setProductDialogMode] = useState<"create" | "edit">("create");
+  const [deleteProductDialogOpen, setDeleteProductDialogOpen] = useState(false);
 
   // Search and filter states
   const [orderSearch, setOrderSearch] = useState("");
@@ -112,13 +127,15 @@ const Admin = () => {
     // Fetch products first for mapping
     const { data: productsData } = await supabase
       .from("products")
-      .select("id, name");
+      .select("*")
+      .order("created_at", { ascending: false });
     
     const productMap: Record<string, string> = {};
     productsData?.forEach((p: Product) => {
       productMap[p.id] = p.name;
     });
     setProducts(productMap);
+    setProductsList(productsData || []);
 
     // Fetch orders
     const { data: ordersData } = await supabase
@@ -286,6 +303,10 @@ const Admin = () => {
             <TabsTrigger value="licenses" className="gap-2">
               <Key className="h-4 w-4" />
               لایسنس‌ها
+            </TabsTrigger>
+            <TabsTrigger value="products" className="gap-2">
+              <ShoppingBag className="h-4 w-4" />
+              محصولات
             </TabsTrigger>
           </TabsList>
 
@@ -535,6 +556,99 @@ const Admin = () => {
               </CardContent>
             </Card>
           </TabsContent>
+
+          {/* Products Tab */}
+          <TabsContent value="products">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>محصولات</CardTitle>
+                  <CardDescription>مدیریت محصولات فروشگاه</CardDescription>
+                </div>
+                <Button
+                  onClick={() => {
+                    setSelectedProduct(null);
+                    setProductDialogMode("create");
+                    setProductDialogOpen(true);
+                  }}
+                  className="gap-2"
+                >
+                  <Plus className="h-4 w-4" />
+                  افزودن محصول
+                </Button>
+              </CardHeader>
+              <CardContent>
+                {dataLoading ? (
+                  <div className="flex justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                  </div>
+                ) : productsList.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-8">محصولی یافت نشد</p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>نام محصول</TableHead>
+                          <TableHead>قیمت</TableHead>
+                          <TableHead>قیمت اصلی</TableHead>
+                          <TableHead>وضعیت</TableHead>
+                          <TableHead className="w-[60px]">عملیات</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {productsList.map((product) => (
+                          <TableRow key={product.id}>
+                            <TableCell className="font-medium">{product.name}</TableCell>
+                            <TableCell>{formatPrice(product.price)}</TableCell>
+                            <TableCell>
+                              {product.original_price ? formatPrice(product.original_price) : "-"}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant={product.is_active ? "default" : "secondary"}>
+                                {product.is_active ? "فعال" : "غیرفعال"}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem
+                                    onClick={() => {
+                                      setSelectedProduct(product);
+                                      setProductDialogMode("edit");
+                                      setProductDialogOpen(true);
+                                    }}
+                                  >
+                                    <Edit className="ml-2 h-4 w-4" />
+                                    ویرایش
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => {
+                                      setSelectedProduct(product);
+                                      setDeleteProductDialogOpen(true);
+                                    }}
+                                    className="text-destructive focus:text-destructive"
+                                  >
+                                    <Trash2 className="ml-2 h-4 w-4" />
+                                    حذف
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
       </main>
 
@@ -573,6 +687,23 @@ const Admin = () => {
       <CreateLicenseDialog
         open={createDialogOpen}
         onOpenChange={setCreateDialogOpen}
+        onSuccess={fetchData}
+      />
+
+      {/* Product Management Dialogs */}
+      <ProductDialog
+        product={selectedProduct}
+        open={productDialogOpen}
+        onOpenChange={setProductDialogOpen}
+        onSuccess={fetchData}
+        mode={productDialogMode}
+      />
+
+      <DeleteProductDialog
+        productId={selectedProduct?.id || null}
+        productName={selectedProduct?.name || ""}
+        open={deleteProductDialogOpen}
+        onOpenChange={setDeleteProductDialogOpen}
         onSuccess={fetchData}
       />
     </div>
