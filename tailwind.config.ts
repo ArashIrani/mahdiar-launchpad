@@ -20,20 +20,19 @@ export default {
   				'sans-serif'
   			],
   			sans: [
-  				'Montserrat',
+  				'Roboto',
   				'ui-sans-serif',
   				'system-ui',
   				'-apple-system',
   				'BlinkMacSystemFont',
   				'Segoe UI',
-  				'Roboto',
   				'Helvetica Neue',
   				'Arial',
   				'Noto Sans',
   				'sans-serif'
   			],
   			serif: [
-  				'Cormorant Garamond',
+  				'Libre Caslon Text',
   				'ui-serif',
   				'Georgia',
   				'Cambria',
@@ -42,7 +41,7 @@ export default {
   				'serif'
   			],
   			mono: [
-  				'IBM Plex Mono',
+  				'Roboto Mono',
   				'ui-monospace',
   				'SFMono-Regular',
   				'Menlo',
@@ -54,7 +53,7 @@ export default {
   			]
   		},
   		fontSize: {
-  			'display': [
+  			display: [
   				'3rem',
   				{
   					lineHeight: '1.1',
@@ -68,7 +67,7 @@ export default {
   					fontWeight: '700'
   				}
   			],
-  			'heading': [
+  			heading: [
   				'1.75rem',
   				{
   					lineHeight: '1.3',
@@ -88,7 +87,7 @@ export default {
   					lineHeight: '1.7'
   				}
   			],
-  			'body': [
+  			body: [
   				'1rem',
   				{
   					lineHeight: '1.7'
