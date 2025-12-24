@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, LogOut, Package, Key, AlertTriangle, Eye, CalendarPlus, Ban, MoreHorizontal, RefreshCw, Plus, LayoutDashboard, Search, Download, Edit, Trash2, ShoppingBag, ChevronRight, ChevronLeft } from "lucide-react";
+import { Loader2, LogOut, Package, Key, AlertTriangle, Eye, CalendarPlus, Ban, MoreHorizontal, RefreshCw, Plus, LayoutDashboard, Search, Download, Edit, Trash2, ShoppingBag, ChevronRight, ChevronLeft, Images } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,6 +21,7 @@ import CreateLicenseDialog from "@/components/admin/CreateLicenseDialog";
 import DashboardStats from "@/components/admin/DashboardStats";
 import ProductDialog from "@/components/admin/ProductDialog";
 import DeleteProductDialog from "@/components/admin/DeleteProductDialog";
+import ProductGalleryDialog from "@/components/admin/ProductGalleryDialog";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -87,6 +88,7 @@ const Admin = () => {
   const [productDialogOpen, setProductDialogOpen] = useState(false);
   const [productDialogMode, setProductDialogMode] = useState<"create" | "edit">("create");
   const [deleteProductDialogOpen, setDeleteProductDialogOpen] = useState(false);
+  const [galleryDialogOpen, setGalleryDialogOpen] = useState(false);
 
   // Search and filter states
   const [orderSearch, setOrderSearch] = useState("");
@@ -352,7 +354,7 @@ const Admin = () => {
                 <Loader2 className="h-6 w-6 animate-spin" />
               </div>
             ) : (
-              <DashboardStats orders={orders} licenses={licenses} />
+              <DashboardStats orders={orders} licenses={licenses} products={products} />
             )}
           </TabsContent>
 
@@ -739,6 +741,15 @@ const Admin = () => {
                                   <DropdownMenuItem
                                     onClick={() => {
                                       setSelectedProduct(product);
+                                      setGalleryDialogOpen(true);
+                                    }}
+                                  >
+                                    <Images className="ml-2 h-4 w-4" />
+                                    گالری تصاویر
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => {
+                                      setSelectedProduct(product);
                                       setDeleteProductDialogOpen(true);
                                     }}
                                     className="text-destructive focus:text-destructive"
@@ -844,6 +855,13 @@ const Admin = () => {
         open={deleteProductDialogOpen}
         onOpenChange={setDeleteProductDialogOpen}
         onSuccess={fetchData}
+      />
+
+      <ProductGalleryDialog
+        open={galleryDialogOpen}
+        onOpenChange={setGalleryDialogOpen}
+        productId={selectedProduct?.id || ""}
+        productName={selectedProduct?.name || ""}
       />
     </div>
   );
