@@ -10,6 +10,7 @@ interface CreatePaymentRequest {
   product_id: string;
   customer_email: string;
   customer_phone: string;
+  coupon_code?: string | null;
 }
 
 serve(async (req) => {
@@ -19,11 +20,10 @@ serve(async (req) => {
   }
 
   try {
-    const { product_id, customer_email, customer_phone }: CreatePaymentRequest = await req.json();
+    const { product_id, customer_email, customer_phone, coupon_code }: CreatePaymentRequest = await req.json();
 
-    console.log("Creating payment for product:", product_id, "email:", customer_email, "phone:", customer_phone);
+    console.log("Creating payment for product:", product_id, "email:", customer_email);
 
-    // Validate input
     if (!product_id || !customer_email || !customer_phone) {
       return new Response(
         JSON.stringify({ error: "اطلاعات ناقص است" }),
@@ -31,13 +31,11 @@ serve(async (req) => {
       );
     }
 
-    // Create Supabase client with service role
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Get product details
     const { data: product, error: productError } = await supabase
       .from("products")
       .select("*")
@@ -46,14 +44,47 @@ serve(async (req) => {
       .single();
 
     if (productError || !product) {
-      console.error("Product not found:", productError);
       return new Response(
         JSON.stringify({ error: "محصول یافت نشد" }),
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log("Product found:", product.name, "Price:", product.price);
+    let finalAmount = product.price;
+    let discountAmount = 0;
+    let couponId = null;
+
+    // Validate coupon if provided
+    if (coupon_code) {
+      const { data: coupon } = await supabase
+        .from("coupons")
+        .select("*")
+        .eq("code", coupon_code.toUpperCase())
+        .eq("is_active", true)
+        .maybeSingle();
+
+      if (coupon) {
+        const now = new Date();
+        const validFrom = coupon.valid_from ? new Date(coupon.valid_from) : null;
+        const validUntil = coupon.valid_until ? new Date(coupon.valid_until) : null;
+        
+        if ((!validFrom || validFrom <= now) && (!validUntil || validUntil >= now)) {
+          if (!coupon.max_uses || coupon.used_count < coupon.max_uses) {
+            if (!coupon.min_purchase || product.price >= coupon.min_purchase) {
+              if (!coupon.product_id || coupon.product_id === product_id) {
+                if (coupon.discount_type === "percentage") {
+                  discountAmount = Math.floor((product.price * coupon.discount_value) / 100);
+                } else {
+                  discountAmount = coupon.discount_value;
+                }
+                finalAmount = Math.max(0, product.price - discountAmount);
+                couponId = coupon.id;
+              }
+            }
+          }
+        }
+      }
+    }
 
     // Create order in database
     const { data: order, error: orderError } = await supabase
@@ -62,7 +93,10 @@ serve(async (req) => {
         product_id: product.id,
         customer_email,
         customer_phone,
-        amount: product.price,
+        amount: finalAmount,
+        original_amount: product.price,
+        discount_amount: discountAmount,
+        coupon_id: couponId,
         status: "pending",
       })
       .select()

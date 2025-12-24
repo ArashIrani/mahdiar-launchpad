@@ -138,6 +138,35 @@ serve(async (req) => {
       })
       .eq("id", order.id);
 
+    // Increment sales_count on product
+    await supabase
+      .from("products")
+      .update({ sales_count: (order.products?.sales_count || 0) + 1 })
+      .eq("id", order.product_id);
+
+    // Update coupon usage if applicable
+    if (order.coupon_id) {
+      const { data: couponData } = await supabase
+        .from("coupons")
+        .select("used_count")
+        .eq("id", order.coupon_id)
+        .single();
+      
+      if (couponData) {
+        await supabase
+          .from("coupons")
+          .update({ used_count: (couponData.used_count || 0) + 1 })
+          .eq("id", order.coupon_id);
+      }
+      
+      await supabase.from("coupon_usages").insert({
+        coupon_id: order.coupon_id,
+        order_id: order.id,
+        customer_email: order.customer_email,
+        discount_amount: order.discount_amount || 0,
+      });
+    }
+
     // Generate license key
     const licenseKey = generateLicenseKey();
 

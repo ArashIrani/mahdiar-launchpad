@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, LogOut, Package, Key, AlertTriangle, Eye, CalendarPlus, Ban, MoreHorizontal, RefreshCw, Plus, LayoutDashboard, Search, Download, Edit, Trash2, ShoppingBag, ChevronRight, ChevronLeft, Images } from "lucide-react";
+import { Loader2, LogOut, Package, Key, AlertTriangle, Eye, CalendarPlus, Ban, MoreHorizontal, RefreshCw, Plus, LayoutDashboard, Search, Download, Edit, Trash2, ShoppingBag, ChevronRight, ChevronLeft, Images, Ticket } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,6 +22,7 @@ import DashboardStats from "@/components/admin/DashboardStats";
 import ProductDialog from "@/components/admin/ProductDialog";
 import DeleteProductDialog from "@/components/admin/DeleteProductDialog";
 import ProductGalleryDialog from "@/components/admin/ProductGalleryDialog";
+import CouponDialog from "@/components/admin/CouponDialog";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -65,6 +66,21 @@ interface Product {
   deep_link_scheme: string | null;
   image_url: string | null;
   created_at: string;
+  category: string | null;
+}
+
+interface Coupon {
+  id: string;
+  code: string;
+  discount_type: string;
+  discount_value: number;
+  min_purchase: number | null;
+  max_uses: number | null;
+  used_count: number;
+  valid_from: string | null;
+  valid_until: string | null;
+  is_active: boolean;
+  product_id: string | null;
 }
 
 const Admin = () => {
@@ -73,6 +89,7 @@ const Admin = () => {
   const [licenses, setLicenses] = useState<License[]>([]);
   const [products, setProducts] = useState<Record<string, string>>({});
   const [productsList, setProductsList] = useState<Product[]>([]);
+  const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
 
   // License management states
@@ -90,6 +107,11 @@ const Admin = () => {
   const [deleteProductDialogOpen, setDeleteProductDialogOpen] = useState(false);
   const [galleryDialogOpen, setGalleryDialogOpen] = useState(false);
 
+  // Coupon management states
+  const [selectedCoupon, setSelectedCoupon] = useState<Coupon | null>(null);
+  const [couponDialogOpen, setCouponDialogOpen] = useState(false);
+  const [couponDialogMode, setCouponDialogMode] = useState<"create" | "edit">("create");
+
   // Search and filter states
   const [orderSearch, setOrderSearch] = useState("");
   const [orderStatusFilter, setOrderStatusFilter] = useState("all");
@@ -100,6 +122,7 @@ const Admin = () => {
   const [ordersPage, setOrdersPage] = useState(1);
   const [licensesPage, setLicensesPage] = useState(1);
   const [productsPage, setProductsPage] = useState(1);
+  const [couponsPage, setCouponsPage] = useState(1);
   const itemsPerPage = 10;
 
   // Filtered data
@@ -152,6 +175,12 @@ const Admin = () => {
   );
   const totalProductPages = Math.ceil(productsList.length / itemsPerPage);
 
+  const paginatedCoupons = coupons.slice(
+    (couponsPage - 1) * itemsPerPage,
+    couponsPage * itemsPerPage
+  );
+  const totalCouponPages = Math.ceil(coupons.length / itemsPerPage);
+
   useEffect(() => {
     if (isAdmin) {
       fetchData();
@@ -189,6 +218,14 @@ const Admin = () => {
       .order("created_at", { ascending: false });
     
     setLicenses(licensesData || []);
+
+    // Fetch coupons
+    const { data: couponsData } = await supabase
+      .from("coupons")
+      .select("*")
+      .order("created_at", { ascending: false });
+    
+    setCoupons(couponsData || []);
     setDataLoading(false);
   };
 
@@ -344,6 +381,10 @@ const Admin = () => {
             <TabsTrigger value="products" className="gap-2">
               <ShoppingBag className="h-4 w-4" />
               محصولات
+            </TabsTrigger>
+            <TabsTrigger value="coupons" className="gap-2">
+              <Ticket className="h-4 w-4" />
+              کوپن‌ها
             </TabsTrigger>
           </TabsList>
 
@@ -799,6 +840,149 @@ const Admin = () => {
               </CardContent>
             </Card>
           </TabsContent>
+
+          {/* Coupons Tab */}
+          <TabsContent value="coupons">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>کوپن‌های تخفیف</CardTitle>
+                  <CardDescription>مدیریت کوپن‌های تخفیف</CardDescription>
+                </div>
+                <Button
+                  onClick={() => {
+                    setSelectedCoupon(null);
+                    setCouponDialogMode("create");
+                    setCouponDialogOpen(true);
+                  }}
+                  className="gap-2"
+                >
+                  <Plus className="h-4 w-4" />
+                  ایجاد کوپن
+                </Button>
+              </CardHeader>
+              <CardContent>
+                {dataLoading ? (
+                  <div className="flex justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                  </div>
+                ) : coupons.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-8">کوپنی یافت نشد</p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>کد</TableHead>
+                          <TableHead>نوع</TableHead>
+                          <TableHead>مقدار</TableHead>
+                          <TableHead>استفاده</TableHead>
+                          <TableHead>اعتبار</TableHead>
+                          <TableHead>وضعیت</TableHead>
+                          <TableHead className="w-[60px]">عملیات</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {paginatedCoupons.map((coupon) => (
+                          <TableRow key={coupon.id}>
+                            <TableCell className="font-mono font-medium">{coupon.code}</TableCell>
+                            <TableCell>
+                              {coupon.discount_type === "percentage" ? "درصدی" : "مبلغ ثابت"}
+                            </TableCell>
+                            <TableCell>
+                              {coupon.discount_type === "percentage" 
+                                ? `${coupon.discount_value}%`
+                                : `${coupon.discount_value.toLocaleString("fa-IR")} تومان`
+                              }
+                            </TableCell>
+                            <TableCell>
+                              {coupon.used_count}
+                              {coupon.max_uses && ` / ${coupon.max_uses}`}
+                            </TableCell>
+                            <TableCell className="text-sm">
+                              {coupon.valid_until 
+                                ? new Date(coupon.valid_until).toLocaleDateString("fa-IR")
+                                : "نامحدود"
+                              }
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant={coupon.is_active ? "default" : "secondary"}>
+                                {coupon.is_active ? "فعال" : "غیرفعال"}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem
+                                    onClick={() => {
+                                      setSelectedCoupon(coupon);
+                                      setCouponDialogMode("edit");
+                                      setCouponDialogOpen(true);
+                                    }}
+                                  >
+                                    <Edit className="ml-2 h-4 w-4" />
+                                    ویرایش
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={async () => {
+                                      await supabase
+                                        .from("coupons")
+                                        .delete()
+                                        .eq("id", coupon.id);
+                                      fetchData();
+                                    }}
+                                    className="text-destructive focus:text-destructive"
+                                  >
+                                    <Trash2 className="ml-2 h-4 w-4" />
+                                    حذف
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+
+                    {/* Pagination */}
+                    {totalCouponPages > 1 && (
+                      <div className="flex items-center justify-between mt-4">
+                        <p className="text-sm text-muted-foreground">
+                          نمایش {(couponsPage - 1) * itemsPerPage + 1} تا {Math.min(couponsPage * itemsPerPage, coupons.length)} از {coupons.length}
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCouponsPage((p) => Math.max(1, p - 1))}
+                            disabled={couponsPage === 1}
+                          >
+                            <ChevronRight className="h-4 w-4" />
+                          </Button>
+                          <span className="text-sm">
+                            {couponsPage} / {totalCouponPages}
+                          </span>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCouponsPage((p) => Math.min(totalCouponPages, p + 1))}
+                            disabled={couponsPage === totalCouponPages}
+                          >
+                            <ChevronLeft className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
       </main>
 
@@ -862,6 +1046,16 @@ const Admin = () => {
         onOpenChange={setGalleryDialogOpen}
         productId={selectedProduct?.id || ""}
         productName={selectedProduct?.name || ""}
+      />
+
+      {/* Coupon Management Dialogs */}
+      <CouponDialog
+        open={couponDialogOpen}
+        onOpenChange={setCouponDialogOpen}
+        coupon={selectedCoupon}
+        mode={couponDialogMode}
+        products={productsList.map((p) => ({ id: p.id, name: p.name }))}
+        onSuccess={fetchData}
       />
     </div>
   );
