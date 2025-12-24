@@ -118,6 +118,7 @@ export type Database = {
           deep_link_scheme: string | null
           description: string | null
           id: string
+          image_url: string | null
           is_active: boolean
           name: string
           original_price: number | null
@@ -128,6 +129,7 @@ export type Database = {
           deep_link_scheme?: string | null
           description?: string | null
           id?: string
+          image_url?: string | null
           is_active?: boolean
           name: string
           original_price?: number | null
@@ -138,6 +140,7 @@ export type Database = {
           deep_link_scheme?: string | null
           description?: string | null
           id?: string
+          image_url?: string | null
           is_active?: boolean
           name?: string
           original_price?: number | null

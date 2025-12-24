@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog,
@@ -14,7 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "@/hooks/use-toast";
-import { Loader2 } from "lucide-react";
+import { Loader2, Upload, X, ImageIcon } from "lucide-react";
 
 interface Product {
   id: string;
@@ -24,6 +24,7 @@ interface Product {
   original_price: number | null;
   is_active: boolean;
   deep_link_scheme: string | null;
+  image_url: string | null;
 }
 
 interface ProductDialogProps {
@@ -42,12 +43,15 @@ const ProductDialog = ({
   mode,
 }: ProductDialogProps) => {
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
   const [originalPrice, setOriginalPrice] = useState("");
   const [isActive, setIsActive] = useState(true);
   const [deepLinkScheme, setDeepLinkScheme] = useState("");
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (open) {
@@ -58,6 +62,7 @@ const ProductDialog = ({
         setOriginalPrice(product.original_price?.toString() || "");
         setIsActive(product.is_active);
         setDeepLinkScheme(product.deep_link_scheme || "");
+        setImageUrl(product.image_url);
       } else {
         resetForm();
       }
@@ -71,6 +76,68 @@ const ProductDialog = ({
     setOriginalPrice("");
     setIsActive(true);
     setDeepLinkScheme("");
+    setImageUrl(null);
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      toast({
+        title: "خطا",
+        description: "فقط فایل‌های تصویری مجاز هستند",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "خطا",
+        description: "حداکثر حجم فایل ۵ مگابایت است",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setUploading(true);
+
+    try {
+      const fileExt = file.name.split(".").pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const filePath = `products/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("product-images")
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage
+        .from("product-images")
+        .getPublicUrl(filePath);
+
+      setImageUrl(urlData.publicUrl);
+      toast({ title: "موفق", description: "تصویر با موفقیت آپلود شد" });
+    } catch (error: any) {
+      toast({
+        title: "خطا",
+        description: error.message || "خطا در آپلود تصویر",
+        variant: "destructive",
+      });
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setImageUrl(null);
   };
 
   const handleSubmit = async () => {
@@ -101,6 +168,7 @@ const ProductDialog = ({
       original_price: originalPrice ? Number(originalPrice) : null,
       is_active: isActive,
       deep_link_scheme: deepLinkScheme.trim() || null,
+      image_url: imageUrl,
     };
 
     try {
@@ -131,7 +199,7 @@ const ProductDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent dir="rtl" className="sm:max-w-md">
+      <DialogContent dir="rtl" className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {mode === "create" ? "ایجاد محصول جدید" : "ویرایش محصول"}
@@ -144,6 +212,61 @@ const ProductDialog = ({
         </DialogHeader>
 
         <div className="space-y-4 py-4">
+          {/* Image Upload */}
+          <div className="space-y-2">
+            <Label>تصویر محصول</Label>
+            <div className="flex items-center gap-4">
+              {imageUrl ? (
+                <div className="relative">
+                  <img
+                    src={imageUrl}
+                    alt="تصویر محصول"
+                    className="w-20 h-20 object-cover rounded-lg border"
+                  />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="icon"
+                    className="absolute -top-2 -left-2 h-6 w-6"
+                    onClick={handleRemoveImage}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="w-20 h-20 border-2 border-dashed rounded-lg flex items-center justify-center bg-muted">
+                  <ImageIcon className="h-8 w-8 text-muted-foreground" />
+                </div>
+              )}
+              <div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="hidden"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                >
+                  {uploading ? (
+                    <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Upload className="ml-2 h-4 w-4" />
+                  )}
+                  {uploading ? "در حال آپلود..." : "آپلود تصویر"}
+                </Button>
+                <p className="text-xs text-muted-foreground mt-1">
+                  حداکثر ۵ مگابایت
+                </p>
+              </div>
+            </div>
+          </div>
+
           <div className="space-y-2">
             <Label>نام محصول *</Label>
             <Input
@@ -206,7 +329,7 @@ const ProductDialog = ({
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
             انصراف
           </Button>
-          <Button onClick={handleSubmit} disabled={loading}>
+          <Button onClick={handleSubmit} disabled={loading || uploading}>
             {loading && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
             {mode === "create" ? "ایجاد" : "ذخیره"}
           </Button>

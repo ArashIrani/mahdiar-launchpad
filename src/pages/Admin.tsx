@@ -62,6 +62,7 @@ interface Product {
   original_price: number | null;
   is_active: boolean;
   deep_link_scheme: string | null;
+  image_url: string | null;
   created_at: string;
 }
 
@@ -683,6 +684,7 @@ const Admin = () => {
                     <Table>
                       <TableHeader>
                         <TableRow>
+                          <TableHead>تصویر</TableHead>
                           <TableHead>نام محصول</TableHead>
                           <TableHead>قیمت</TableHead>
                           <TableHead>قیمت اصلی</TableHead>
@@ -693,6 +695,19 @@ const Admin = () => {
                       <TableBody>
                         {paginatedProducts.map((product) => (
                           <TableRow key={product.id}>
+                            <TableCell>
+                              {product.image_url ? (
+                                <img
+                                  src={product.image_url}
+                                  alt={product.name}
+                                  className="w-10 h-10 object-cover rounded"
+                                />
+                              ) : (
+                                <div className="w-10 h-10 bg-muted rounded flex items-center justify-center">
+                                  <ShoppingBag className="h-5 w-5 text-muted-foreground" />
+                                </div>
+                              )}
+                            </TableCell>
                             <TableCell className="font-medium">{product.name}</TableCell>
                             <TableCell>{formatPrice(product.price)}</TableCell>
                             <TableCell>
