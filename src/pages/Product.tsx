@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/components/ui/sonner";
+import Header from "@/components/landing/Header";
 import Footer from "@/components/landing/Footer";
 import { 
   Video, 
@@ -233,7 +234,7 @@ const Product = () => {
 
   return (
     <main className="min-h-screen bg-background">
-      {/* Header */}
+      <Header />
       <section className="bg-gradient-to-b from-primary/10 to-background py-12">
         <div className="container">
           <div className="text-center">

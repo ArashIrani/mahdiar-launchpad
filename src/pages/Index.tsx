@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import Header from "@/components/landing/Header";
 import Hero from "@/components/landing/Hero";
 import FeatureCard from "@/components/landing/FeatureCard";
 import TargetAudience from "@/components/landing/TargetAudience";
@@ -115,7 +116,8 @@ const Index = () => {
 
   return (
     <main className="min-h-screen">
-      {/* Hero Section */}
+      {/* Header */}
+      <Header />
       <Hero
         title={productData.title}
         subtitle={productData.subtitle}

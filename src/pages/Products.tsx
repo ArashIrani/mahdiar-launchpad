@@ -14,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import Header from "@/components/landing/Header";
 import Footer from "@/components/landing/Footer";
 import { Search, ShoppingBag, Star, Users, Filter, X } from "lucide-react";
 
@@ -114,7 +115,8 @@ const Products = () => {
 
   return (
     <main className="min-h-screen bg-background" dir="rtl">
-      {/* Header */}
+      <Header />
+      {/* Page Header */}
       <section className="bg-gradient-to-b from-primary/10 to-background py-12">
         <div className="container">
           <h1 className="text-heading md:text-display-sm text-foreground text-center mb-4">
