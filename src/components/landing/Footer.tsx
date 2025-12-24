@@ -9,7 +9,14 @@ const Footer = () => {
         <div className="flex flex-col items-center gap-8 md:flex-row md:justify-between">
           {/* Logo & Brand */}
           <div className="text-center md:text-right">
-            <h3 className="text-heading-sm text-foreground mb-2">مهدیار تراز</h3>
+            <Link to="/" className="inline-flex items-center gap-2 mb-2 group">
+              <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center text-primary-foreground font-bold text-lg transition-transform group-hover:scale-105">
+                م
+              </div>
+              <span className="text-xl font-bold text-foreground group-hover:text-primary transition-colors">
+                مهدیار تراز
+              </span>
+            </Link>
             <p className="text-body-sm text-muted-foreground">
               آموزش حرفه‌ای نرم‌افزار حسابداری هلو
             </p>
