@@ -14,7 +14,137 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      licenses: {
+        Row: {
+          activated_at: string | null
+          created_at: string
+          device_id: string | null
+          expires_at: string | null
+          id: string
+          license_key: string
+          order_id: string
+          product_id: string
+          status: string
+        }
+        Insert: {
+          activated_at?: string | null
+          created_at?: string
+          device_id?: string | null
+          expires_at?: string | null
+          id?: string
+          license_key: string
+          order_id: string
+          product_id: string
+          status?: string
+        }
+        Update: {
+          activated_at?: string | null
+          created_at?: string
+          device_id?: string | null
+          expires_at?: string | null
+          id?: string
+          license_key?: string
+          order_id?: string
+          product_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "licenses_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "licenses_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orders: {
+        Row: {
+          amount: number
+          authority: string | null
+          created_at: string
+          customer_email: string | null
+          customer_phone: string | null
+          id: string
+          product_id: string
+          ref_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          authority?: string | null
+          created_at?: string
+          customer_email?: string | null
+          customer_phone?: string | null
+          id?: string
+          product_id: string
+          ref_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          authority?: string | null
+          created_at?: string
+          customer_email?: string | null
+          customer_phone?: string | null
+          id?: string
+          product_id?: string
+          ref_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      products: {
+        Row: {
+          created_at: string
+          deep_link_scheme: string | null
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          original_price: number | null
+          price: number
+        }
+        Insert: {
+          created_at?: string
+          deep_link_scheme?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          original_price?: number | null
+          price: number
+        }
+        Update: {
+          created_at?: string
+          deep_link_scheme?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          original_price?: number | null
+          price?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
