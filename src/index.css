@@ -17,61 +17,71 @@
 
 @layer base {
   :root {
-    --background: 0 0% 96%;
-    --foreground: 0 0% 9%;
+    /* Background & Foreground - #FFFFFF, #1F2937 */
+    --background: 0 0% 100%;
+    --foreground: 220 20% 17%;
 
-    --card: 0 0% 98%;
-    --card-foreground: 0 0% 9%;
+    /* Card - #F9FAFB */
+    --card: 220 14% 98%;
+    --card-foreground: 220 20% 17%;
 
-    --popover: 0 0% 89%;
-    --popover-foreground: 0 0% 9%;
+    /* Popover */
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 20% 17%;
 
-    /* Primary: Green */
-    --primary: 20 90% 48%;
-    --primary-foreground: 33 100% 96%;
+    /* Primary: سبز اصلی #1E7F5C */
+    --primary: 156 61% 31%;
+    --primary-foreground: 0 0% 100%;
 
-    /* Secondary: Light Green */
-    --secondary: 0 0% 32%;
-    --secondary-foreground: 0 0% 98%;
+    /* Secondary */
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 220 20% 17%;
 
-    --muted: 0 0% 63%;
-    --muted-foreground: 0 0% 9%;
+    /* Muted - #6B7280 */
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 8% 46%;
 
-    /* Accent: Coral Red */
-    --accent: 47 100% 96%;
-    --accent-foreground: 37 92% 50%;
+    /* Accent: قرمز هلو #E85D4F */
+    --accent: 4 78% 61%;
+    --accent-foreground: 0 0% 100%;
 
-    /* UltraViolet */
+    /* UltraViolet: #6A5ACD */
     --ultraviolet: 248 53% 58%;
     --ultraviolet-foreground: 0 0% 100%;
 
-    --destructive: 0 72% 50%;
-    --destructive-foreground: 0 85% 97%;
+    /* Destructive */
+    --destructive: 4 78% 55%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 0 0% 83%;
-    --input: 0 0% 83%;
-    --ring: 20 90% 48%;
+    /* Border & Input */
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 156 61% 31%;
 
     --radius: 0.75rem;
 
-    /* Surface colors */
+    /* Surface colors - #F9FAFB */
     --surface: 220 14% 98%;
-    --surface-foreground: 220 20% 15%;
+    --surface-foreground: 220 20% 17%;
 
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 0 0% 9%;
-    --sidebar-primary: 20 90% 48%;
-    --sidebar-primary-foreground: 33 100% 96%;
-    --sidebar-accent: 0 0% 32%;
-    --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 0 0% 83%;
-    --sidebar-ring: 20 90% 48%;
-    --chart-1: 27 95% 60%;
-    --chart-2: 43 96% 56%;
-    --chart-3: 47 95% 53%;
-    --chart-4: 24 94% 53%;
-    --chart-5: 0 0% 45%;
-    --sidebar: 0 0% 98%;
+    /* Sidebar */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 220 20% 17%;
+    --sidebar-primary: 156 61% 31%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 4 78% 61%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 156 61% 31%;
+    --sidebar: 0 0% 100%;
+
+    /* Charts - green/coral palette */
+    --chart-1: 156 61% 31%;
+    --chart-2: 4 78% 61%;
+    --chart-3: 248 53% 58%;
+    --chart-4: 156 50% 45%;
+    --chart-5: 220 8% 46%;
+
     --font-sans: 'Roboto', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
     --font-serif: 'Libre Caslon Text', ui-serif, Georgia, Cambria, 'Times New Roman', Times, serif;
     --font-mono: 'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
@@ -88,62 +98,77 @@
   }
 
   .dark {
-    --background: 0 0% 9%;
+    /* Background & Foreground - dark */
+    --background: 220 20% 10%;
     --foreground: 0 0% 98%;
 
-    --card: 0 0% 14%;
+    /* Card */
+    --card: 220 18% 14%;
     --card-foreground: 0 0% 98%;
 
-    --popover: 0 0% 25%;
+    /* Popover */
+    --popover: 220 18% 18%;
     --popover-foreground: 0 0% 98%;
 
-    --primary: 27 95% 60%;
-    --primary-foreground: 12 81% 14%;
+    /* Primary: سبز روشن‌تر برای دارک مود */
+    --primary: 156 55% 42%;
+    --primary-foreground: 220 20% 10%;
 
-    --secondary: 0 0% 45%;
+    /* Secondary */
+    --secondary: 220 15% 22%;
     --secondary-foreground: 0 0% 98%;
 
-    --muted: 0 0% 45%;
-    --muted-foreground: 0 0% 98%;
+    /* Muted */
+    --muted: 220 15% 25%;
+    --muted-foreground: 220 8% 70%;
 
-    --accent: 20 91% 14%;
-    --accent-foreground: 43 96% 56%;
+    /* Accent: قرمز هلو روشن‌تر */
+    --accent: 4 75% 65%;
+    --accent-foreground: 220 20% 10%;
 
+    /* UltraViolet */
     --ultraviolet: 248 50% 65%;
     --ultraviolet-foreground: 0 0% 100%;
 
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 85% 97%;
+    /* Destructive */
+    --destructive: 4 75% 60%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 0 0% 32%;
-    --input: 0 0% 32%;
-    --ring: 27 95% 60%;
+    /* Border & Input */
+    --border: 220 15% 25%;
+    --input: 220 15% 25%;
+    --ring: 156 55% 42%;
 
-    --surface: 220 18% 10%;
+    /* Surface */
+    --surface: 220 18% 12%;
     --surface-foreground: 0 0% 95%;
 
+    /* Sidebar */
     --sidebar-background: 220 20% 10%;
     --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 27 95% 60%;
-    --sidebar-primary-foreground: 12 81% 14%;
-    --sidebar-accent: 43 96% 56%;
-    --sidebar-accent-foreground: 20 91% 14%;
-    --sidebar-border: 0 0% 32%;
-    --sidebar-ring: 27 95% 60%;
-    --chart-1: 30 97% 72%;
-    --chart-2: 45 96% 64%;
-    --chart-3: 48 96% 76%;
-    --chart-4: 27 95% 60%;
-    --chart-5: 0 0% 45%;
-    --sidebar: 0 0% 14%;
-    --shadow-2xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
-    --shadow-xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
-    --shadow-sm: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
-    --shadow: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
-    --shadow-md: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 2px 4px -1px hsl(0 0% 0% / 0.1);
-    --shadow-lg: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 4px 6px -1px hsl(0 0% 0% / 0.1);
-    --shadow-xl: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 8px 10px -1px hsl(0 0% 0% / 0.1);
-    --shadow-2xl: 0 1px 3px 0px hsl(0 0% 0% / 0.25);
+    --sidebar-primary: 156 55% 42%;
+    --sidebar-primary-foreground: 220 20% 10%;
+    --sidebar-accent: 4 75% 65%;
+    --sidebar-accent-foreground: 220 20% 10%;
+    --sidebar-border: 220 15% 25%;
+    --sidebar-ring: 156 55% 42%;
+    --sidebar: 220 18% 14%;
+
+    /* Charts */
+    --chart-1: 156 55% 50%;
+    --chart-2: 4 75% 65%;
+    --chart-3: 248 50% 65%;
+    --chart-4: 156 50% 55%;
+    --chart-5: 220 8% 55%;
+
+    --shadow-2xs: 0 1px 3px 0px hsl(0 0% 0% / 0.1);
+    --shadow-xs: 0 1px 3px 0px hsl(0 0% 0% / 0.1);
+    --shadow-sm: 0 1px 3px 0px hsl(0 0% 0% / 0.15), 0 1px 2px -1px hsl(0 0% 0% / 0.15);
+    --shadow: 0 1px 3px 0px hsl(0 0% 0% / 0.15), 0 1px 2px -1px hsl(0 0% 0% / 0.15);
+    --shadow-md: 0 1px 3px 0px hsl(0 0% 0% / 0.15), 0 2px 4px -1px hsl(0 0% 0% / 0.15);
+    --shadow-lg: 0 1px 3px 0px hsl(0 0% 0% / 0.15), 0 4px 6px -1px hsl(0 0% 0% / 0.15);
+    --shadow-xl: 0 1px 3px 0px hsl(0 0% 0% / 0.15), 0 8px 10px -1px hsl(0 0% 0% / 0.15);
+    --shadow-2xl: 0 1px 3px 0px hsl(0 0% 0% / 0.3);
   }
 }
 
