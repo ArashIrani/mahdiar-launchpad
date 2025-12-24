@@ -1,1 +1,7 @@
 project_id = "dybyqtqfovvtknllpuzs"
+
+[functions.zarinpal-create]
+verify_jwt = false
+
+[functions.zarinpal-verify]
+verify_jwt = false
