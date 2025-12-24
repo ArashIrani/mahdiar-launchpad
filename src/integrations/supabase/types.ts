@@ -223,6 +223,33 @@ export type Database = {
           },
         ]
       }
+      otp_codes: {
+        Row: {
+          code: string
+          created_at: string | null
+          expires_at: string
+          id: string
+          phone: string
+          verified: boolean | null
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          expires_at: string
+          id?: string
+          phone: string
+          verified?: boolean | null
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          expires_at?: string
+          id?: string
+          phone?: string
+          verified?: boolean | null
+        }
+        Relationships: []
+      }
       product_images: {
         Row: {
           created_at: string
