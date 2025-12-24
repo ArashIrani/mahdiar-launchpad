@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, LogOut, Package, Key, AlertTriangle, Eye, CalendarPlus, Ban, MoreHorizontal, RefreshCw } from "lucide-react";
+import { Loader2, LogOut, Package, Key, AlertTriangle, Eye, CalendarPlus, Ban, MoreHorizontal, RefreshCw, Plus } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,6 +17,7 @@ import LicenseDetailsDialog from "@/components/admin/LicenseDetailsDialog";
 import ExtendLicenseDialog from "@/components/admin/ExtendLicenseDialog";
 import RevokeLicenseDialog from "@/components/admin/RevokeLicenseDialog";
 import ReactivateLicenseDialog from "@/components/admin/ReactivateLicenseDialog";
+import CreateLicenseDialog from "@/components/admin/CreateLicenseDialog";
 
 interface Order {
   id: string;
@@ -60,6 +61,7 @@ const Admin = () => {
   const [extendDialogOpen, setExtendDialogOpen] = useState(false);
   const [revokeDialogOpen, setRevokeDialogOpen] = useState(false);
   const [reactivateDialogOpen, setReactivateDialogOpen] = useState(false);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
   useEffect(() => {
     if (isAdmin) {
@@ -255,9 +257,15 @@ const Admin = () => {
           {/* Licenses Tab */}
           <TabsContent value="licenses">
             <Card>
-              <CardHeader>
-                <CardTitle>لایسنس‌ها</CardTitle>
-                <CardDescription>لیست تمام لایسنس‌های صادر شده</CardDescription>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>لایسنس‌ها</CardTitle>
+                  <CardDescription>لیست تمام لایسنس‌های صادر شده</CardDescription>
+                </div>
+                <Button onClick={() => setCreateDialogOpen(true)} className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  صدور لایسنس
+                </Button>
               </CardHeader>
               <CardContent>
                 {dataLoading ? (
@@ -392,6 +400,12 @@ const Admin = () => {
         licenseKey={selectedLicense?.license_key || ""}
         open={reactivateDialogOpen}
         onOpenChange={setReactivateDialogOpen}
+        onSuccess={fetchData}
+      />
+
+      <CreateLicenseDialog
+        open={createDialogOpen}
+        onOpenChange={setCreateDialogOpen}
         onSuccess={fetchData}
       />
     </div>
