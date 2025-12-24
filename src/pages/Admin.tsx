@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, LogOut, Package, Key, AlertTriangle, Eye, CalendarPlus, Ban, MoreHorizontal, RefreshCw, Plus, LayoutDashboard, Search, Download, Edit, Trash2, ShoppingBag } from "lucide-react";
+import { Loader2, LogOut, Package, Key, AlertTriangle, Eye, CalendarPlus, Ban, MoreHorizontal, RefreshCw, Plus, LayoutDashboard, Search, Download, Edit, Trash2, ShoppingBag, ChevronRight, ChevronLeft } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -93,6 +93,12 @@ const Admin = () => {
   const [licenseSearch, setLicenseSearch] = useState("");
   const [licenseStatusFilter, setLicenseStatusFilter] = useState("all");
 
+  // Pagination states
+  const [ordersPage, setOrdersPage] = useState(1);
+  const [licensesPage, setLicensesPage] = useState(1);
+  const [productsPage, setProductsPage] = useState(1);
+  const itemsPerPage = 10;
+
   // Filtered data
   const filteredOrders = orders.filter((order) => {
     const matchesSearch =
@@ -114,6 +120,34 @@ const Admin = () => {
       licenseStatusFilter === "all" || license.status === licenseStatusFilter;
     return matchesSearch && matchesStatus;
   });
+
+  // Reset page when filters change
+  useEffect(() => {
+    setOrdersPage(1);
+  }, [orderSearch, orderStatusFilter]);
+
+  useEffect(() => {
+    setLicensesPage(1);
+  }, [licenseSearch, licenseStatusFilter]);
+
+  // Paginated data
+  const paginatedOrders = filteredOrders.slice(
+    (ordersPage - 1) * itemsPerPage,
+    ordersPage * itemsPerPage
+  );
+  const totalOrderPages = Math.ceil(filteredOrders.length / itemsPerPage);
+
+  const paginatedLicenses = filteredLicenses.slice(
+    (licensesPage - 1) * itemsPerPage,
+    licensesPage * itemsPerPage
+  );
+  const totalLicensePages = Math.ceil(filteredLicenses.length / itemsPerPage);
+
+  const paginatedProducts = productsList.slice(
+    (productsPage - 1) * itemsPerPage,
+    productsPage * itemsPerPage
+  );
+  const totalProductPages = Math.ceil(productsList.length / itemsPerPage);
 
   useEffect(() => {
     if (isAdmin) {
@@ -382,7 +416,7 @@ const Admin = () => {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {filteredOrders.map((order) => (
+                        {paginatedOrders.map((order) => (
                           <TableRow key={order.id}>
                             <TableCell className="font-medium">
                               {products[order.product_id] || "نامشخص"}
@@ -405,6 +439,36 @@ const Admin = () => {
                         ))}
                       </TableBody>
                     </Table>
+
+                    {/* Pagination */}
+                    {totalOrderPages > 1 && (
+                      <div className="flex items-center justify-between mt-4">
+                        <p className="text-sm text-muted-foreground">
+                          نمایش {(ordersPage - 1) * itemsPerPage + 1} تا {Math.min(ordersPage * itemsPerPage, filteredOrders.length)} از {filteredOrders.length}
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setOrdersPage((p) => Math.max(1, p - 1))}
+                            disabled={ordersPage === 1}
+                          >
+                            <ChevronRight className="h-4 w-4" />
+                          </Button>
+                          <span className="text-sm">
+                            {ordersPage} / {totalOrderPages}
+                          </span>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setOrdersPage((p) => Math.min(totalOrderPages, p + 1))}
+                            disabled={ordersPage === totalOrderPages}
+                          >
+                            <ChevronLeft className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </CardContent>
@@ -477,7 +541,7 @@ const Admin = () => {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {filteredLicenses.map((license) => (
+                        {paginatedLicenses.map((license) => (
                           <TableRow key={license.id}>
                             <TableCell dir="ltr" className="font-mono text-xs max-w-[150px] truncate">
                               {license.license_key}
@@ -551,6 +615,36 @@ const Admin = () => {
                         ))}
                       </TableBody>
                     </Table>
+
+                    {/* Pagination */}
+                    {totalLicensePages > 1 && (
+                      <div className="flex items-center justify-between mt-4">
+                        <p className="text-sm text-muted-foreground">
+                          نمایش {(licensesPage - 1) * itemsPerPage + 1} تا {Math.min(licensesPage * itemsPerPage, filteredLicenses.length)} از {filteredLicenses.length}
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setLicensesPage((p) => Math.max(1, p - 1))}
+                            disabled={licensesPage === 1}
+                          >
+                            <ChevronRight className="h-4 w-4" />
+                          </Button>
+                          <span className="text-sm">
+                            {licensesPage} / {totalLicensePages}
+                          </span>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setLicensesPage((p) => Math.min(totalLicensePages, p + 1))}
+                            disabled={licensesPage === totalLicensePages}
+                          >
+                            <ChevronLeft className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </CardContent>
@@ -597,7 +691,7 @@ const Admin = () => {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {productsList.map((product) => (
+                        {paginatedProducts.map((product) => (
                           <TableRow key={product.id}>
                             <TableCell className="font-medium">{product.name}</TableCell>
                             <TableCell>{formatPrice(product.price)}</TableCell>
@@ -644,6 +738,36 @@ const Admin = () => {
                         ))}
                       </TableBody>
                     </Table>
+
+                    {/* Pagination */}
+                    {totalProductPages > 1 && (
+                      <div className="flex items-center justify-between mt-4">
+                        <p className="text-sm text-muted-foreground">
+                          نمایش {(productsPage - 1) * itemsPerPage + 1} تا {Math.min(productsPage * itemsPerPage, productsList.length)} از {productsList.length}
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setProductsPage((p) => Math.max(1, p - 1))}
+                            disabled={productsPage === 1}
+                          >
+                            <ChevronRight className="h-4 w-4" />
+                          </Button>
+                          <span className="text-sm">
+                            {productsPage} / {totalProductPages}
+                          </span>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setProductsPage((p) => Math.min(totalProductPages, p + 1))}
+                            disabled={productsPage === totalProductPages}
+                          >
+                            <ChevronLeft className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </CardContent>
