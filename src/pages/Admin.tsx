@@ -6,7 +6,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, LogOut, Package, Key, AlertTriangle } from "lucide-react";
+import { Loader2, LogOut, Package, Key, AlertTriangle, Eye, CalendarPlus, Ban, MoreHorizontal } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import LicenseDetailsDialog from "@/components/admin/LicenseDetailsDialog";
+import ExtendLicenseDialog from "@/components/admin/ExtendLicenseDialog";
+import RevokeLicenseDialog from "@/components/admin/RevokeLicenseDialog";
 
 interface Order {
   id: string;
@@ -43,6 +52,12 @@ const Admin = () => {
   const [licenses, setLicenses] = useState<License[]>([]);
   const [products, setProducts] = useState<Record<string, string>>({});
   const [dataLoading, setDataLoading] = useState(true);
+
+  // License management states
+  const [selectedLicense, setSelectedLicense] = useState<License | null>(null);
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
+  const [extendDialogOpen, setExtendDialogOpen] = useState(false);
+  const [revokeDialogOpen, setRevokeDialogOpen] = useState(false);
 
   useEffect(() => {
     if (isAdmin) {
@@ -258,28 +273,70 @@ const Admin = () => {
                           <TableHead>محصول</TableHead>
                           <TableHead>وضعیت</TableHead>
                           <TableHead>دستگاه</TableHead>
-                          <TableHead>تاریخ فعالسازی</TableHead>
+                          <TableHead>انقضا</TableHead>
                           <TableHead>تاریخ صدور</TableHead>
+                          <TableHead className="w-[60px]">عملیات</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {licenses.map((license) => (
                           <TableRow key={license.id}>
-                            <TableCell dir="ltr" className="font-mono text-xs">
+                            <TableCell dir="ltr" className="font-mono text-xs max-w-[150px] truncate">
                               {license.license_key}
                             </TableCell>
                             <TableCell>
                               {products[license.product_id] || "نامشخص"}
                             </TableCell>
                             <TableCell>{getStatusBadge(license.status)}</TableCell>
-                            <TableCell dir="ltr" className="text-xs">
-                              {license.device_id || "-"}
+                            <TableCell dir="ltr" className="text-xs max-w-[100px] truncate">
+                              {license.device_id ? license.device_id.slice(0, 12) + "..." : "-"}
                             </TableCell>
                             <TableCell className="text-sm">
-                              {license.activated_at ? formatDate(license.activated_at) : "-"}
+                              {license.expires_at ? formatDate(license.expires_at) : "-"}
                             </TableCell>
                             <TableCell className="text-sm">
                               {formatDate(license.created_at)}
+                            </TableCell>
+                            <TableCell>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem
+                                    onClick={() => {
+                                      setSelectedLicense(license);
+                                      setDetailsDialogOpen(true);
+                                    }}
+                                  >
+                                    <Eye className="ml-2 h-4 w-4" />
+                                    مشاهده جزئیات
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => {
+                                      setSelectedLicense(license);
+                                      setExtendDialogOpen(true);
+                                    }}
+                                  >
+                                    <CalendarPlus className="ml-2 h-4 w-4" />
+                                    تمدید انقضا
+                                  </DropdownMenuItem>
+                                  {license.status !== "revoked" && (
+                                    <DropdownMenuItem
+                                      onClick={() => {
+                                        setSelectedLicense(license);
+                                        setRevokeDialogOpen(true);
+                                      }}
+                                      className="text-destructive focus:text-destructive"
+                                    >
+                                      <Ban className="ml-2 h-4 w-4" />
+                                      لغو لایسنس
+                                    </DropdownMenuItem>
+                                  )}
+                                </DropdownMenuContent>
+                              </DropdownMenu>
                             </TableCell>
                           </TableRow>
                         ))}
@@ -292,6 +349,30 @@ const Admin = () => {
           </TabsContent>
         </Tabs>
       </main>
+
+      {/* License Management Dialogs */}
+      <LicenseDetailsDialog
+        license={selectedLicense}
+        productName={selectedLicense ? products[selectedLicense.product_id] || "نامشخص" : ""}
+        open={detailsDialogOpen}
+        onOpenChange={setDetailsDialogOpen}
+      />
+
+      <ExtendLicenseDialog
+        licenseId={selectedLicense?.id || null}
+        currentExpiry={selectedLicense?.expires_at || null}
+        open={extendDialogOpen}
+        onOpenChange={setExtendDialogOpen}
+        onSuccess={fetchData}
+      />
+
+      <RevokeLicenseDialog
+        licenseId={selectedLicense?.id || null}
+        licenseKey={selectedLicense?.license_key || ""}
+        open={revokeDialogOpen}
+        onOpenChange={setRevokeDialogOpen}
+        onSuccess={fetchData}
+      />
     </div>
   );
 };
