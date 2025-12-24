@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, LogOut, Package, Key, AlertTriangle, Eye, CalendarPlus, Ban, MoreHorizontal, RefreshCw, Plus } from "lucide-react";
+import { Loader2, LogOut, Package, Key, AlertTriangle, Eye, CalendarPlus, Ban, MoreHorizontal, RefreshCw, Plus, LayoutDashboard } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,6 +18,7 @@ import ExtendLicenseDialog from "@/components/admin/ExtendLicenseDialog";
 import RevokeLicenseDialog from "@/components/admin/RevokeLicenseDialog";
 import ReactivateLicenseDialog from "@/components/admin/ReactivateLicenseDialog";
 import CreateLicenseDialog from "@/components/admin/CreateLicenseDialog";
+import DashboardStats from "@/components/admin/DashboardStats";
 
 interface Order {
   id: string;
@@ -185,8 +186,12 @@ const Admin = () => {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
-        <Tabs defaultValue="orders" className="w-full">
+        <Tabs defaultValue="dashboard" className="w-full">
           <TabsList className="mb-6">
+            <TabsTrigger value="dashboard" className="gap-2">
+              <LayoutDashboard className="h-4 w-4" />
+              داشبورد
+            </TabsTrigger>
             <TabsTrigger value="orders" className="gap-2">
               <Package className="h-4 w-4" />
               سفارشات
@@ -196,6 +201,17 @@ const Admin = () => {
               لایسنس‌ها
             </TabsTrigger>
           </TabsList>
+
+          {/* Dashboard Tab */}
+          <TabsContent value="dashboard">
+            {dataLoading ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin" />
+              </div>
+            ) : (
+              <DashboardStats orders={orders} licenses={licenses} />
+            )}
+          </TabsContent>
 
           {/* Orders Tab */}
           <TabsContent value="orders">
