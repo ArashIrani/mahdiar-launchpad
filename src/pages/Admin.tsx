@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, LogOut, Package, Key, AlertTriangle, Eye, CalendarPlus, Ban, MoreHorizontal, RefreshCw, Plus, LayoutDashboard, Search } from "lucide-react";
+import { Loader2, LogOut, Package, Key, AlertTriangle, Eye, CalendarPlus, Ban, MoreHorizontal, RefreshCw, Plus, LayoutDashboard, Search, Download } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -174,6 +174,57 @@ const Admin = () => {
     );
   };
 
+  // Export functions
+  const exportOrdersCSV = () => {
+    const statusLabels: Record<string, string> = {
+      completed: "تکمیل شده",
+      pending: "در انتظار",
+      failed: "ناموفق",
+      manual: "دستی",
+    };
+    const headers = ["محصول", "ایمیل مشتری", "تلفن مشتری", "مبلغ", "وضعیت", "کد پیگیری", "تاریخ"];
+    const rows = filteredOrders.map((order) => [
+      products[order.product_id] || "نامشخص",
+      order.customer_email || "-",
+      order.customer_phone || "-",
+      order.amount.toString(),
+      statusLabels[order.status] || order.status,
+      order.ref_id || "-",
+      new Date(order.created_at).toISOString(),
+    ]);
+    downloadCSV([headers, ...rows], "orders");
+  };
+
+  const exportLicensesCSV = () => {
+    const statusLabels: Record<string, string> = {
+      active: "فعال",
+      revoked: "لغو شده",
+    };
+    const headers = ["کلید لایسنس", "محصول", "وضعیت", "شناسه دستگاه", "تاریخ فعالسازی", "تاریخ انقضا", "تاریخ صدور"];
+    const rows = filteredLicenses.map((license) => [
+      license.license_key,
+      products[license.product_id] || "نامشخص",
+      statusLabels[license.status] || license.status,
+      license.device_id || "-",
+      license.activated_at ? new Date(license.activated_at).toISOString() : "-",
+      license.expires_at ? new Date(license.expires_at).toISOString() : "-",
+      new Date(license.created_at).toISOString(),
+    ]);
+    downloadCSV([headers, ...rows], "licenses");
+  };
+
+  const downloadCSV = (data: string[][], filename: string) => {
+    const csvContent = data
+      .map((row) => row.map((cell) => `"${cell.replace(/"/g, '""')}"`).join(","))
+      .join("\n");
+    const BOM = "\uFEFF";
+    const blob = new Blob([BOM + csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `${filename}-${new Date().toISOString().split("T")[0]}.csv`;
+    link.click();
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -252,9 +303,15 @@ const Admin = () => {
           {/* Orders Tab */}
           <TabsContent value="orders">
             <Card>
-              <CardHeader>
-                <CardTitle>سفارشات</CardTitle>
-                <CardDescription>لیست تمام سفارشات ثبت شده</CardDescription>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>سفارشات</CardTitle>
+                  <CardDescription>لیست تمام سفارشات ثبت شده</CardDescription>
+                </div>
+                <Button variant="outline" onClick={exportOrdersCSV} className="gap-2" disabled={filteredOrders.length === 0}>
+                  <Download className="h-4 w-4" />
+                  صادرات CSV
+                </Button>
               </CardHeader>
               <CardContent>
                 {/* Search and Filter */}
@@ -336,15 +393,21 @@ const Admin = () => {
           {/* Licenses Tab */}
           <TabsContent value="licenses">
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
+              <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-4">
                 <div>
                   <CardTitle>لایسنس‌ها</CardTitle>
                   <CardDescription>لیست تمام لایسنس‌های صادر شده</CardDescription>
                 </div>
-                <Button onClick={() => setCreateDialogOpen(true)} className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  صدور لایسنس
-                </Button>
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={exportLicensesCSV} className="gap-2" disabled={filteredLicenses.length === 0}>
+                    <Download className="h-4 w-4" />
+                    صادرات CSV
+                  </Button>
+                  <Button onClick={() => setCreateDialogOpen(true)} className="gap-2">
+                    <Plus className="h-4 w-4" />
+                    صدور لایسنس
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 {/* Search and Filter */}
