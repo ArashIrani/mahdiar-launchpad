@@ -96,7 +96,7 @@ const Support = () => {
           </div>
 
           {/* FAQ Link */}
-          <div className="rounded-xl border border-primary/30 bg-primary/5 p-6 text-center">
+          <div className="rounded-xl border border-primary/30 bg-primary/5 p-6 text-center mb-12">
             <h3 className="text-body-lg font-semibold text-foreground mb-2">
               سوالات متداول را بررسی کردید؟
             </h3>
@@ -106,6 +106,30 @@ const Support = () => {
             <Button variant="outline" asChild>
               <Link to="/#faq">مشاهده سوالات متداول</Link>
             </Button>
+          </div>
+
+          {/* Google Map */}
+          <div className="rounded-xl border border-border overflow-hidden">
+            <h3 className="text-body-lg font-semibold text-foreground p-4 bg-card border-b border-border">
+              موقعیت ما روی نقشه
+            </h3>
+            <div className="aspect-video">
+              <iframe
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3239.9547!2d51.3890!3d35.6892!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMzXCsDQxJzIxLjEiTiA1McKwMjMnMjAuNCJF!5e0!3m2!1sen!2s!4v1234567890"
+                width="100%"
+                height="100%"
+                style={{ border: 0 }}
+                allowFullScreen
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                title="موقعیت مهدیار تراز"
+              />
+            </div>
+            <div className="p-4 bg-card">
+              <p className="text-body text-muted-foreground">
+                تهران، خیابان ولیعصر، پلاک ۱۲۳
+              </p>
+            </div>
           </div>
         </div>
       </main>
