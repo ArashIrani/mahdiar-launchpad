@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import Hero from "@/components/landing/Hero";
 import FeatureCard from "@/components/landing/FeatureCard";
 import TargetAudience from "@/components/landing/TargetAudience";
@@ -106,9 +107,10 @@ const faqItems = [
 ];
 
 const Index = () => {
+  const navigate = useNavigate();
+
   const handlePurchase = () => {
-    // TODO: Integrate with ZarinPal
-    console.log("Purchase clicked");
+    navigate("/product");
   };
 
   return (
