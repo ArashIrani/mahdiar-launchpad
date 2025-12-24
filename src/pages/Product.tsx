@@ -63,6 +63,9 @@ const Product = () => {
   const [submitting, setSubmitting] = useState(false);
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [couponCode, setCouponCode] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number } | null>(null);
+  const [applyingCoupon, setApplyingCoupon] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; phone?: string }>({});
 
   useEffect(() => {
@@ -114,6 +117,61 @@ const Product = () => {
     return new Intl.NumberFormat("fa-IR").format(price);
   };
 
+  const applyCoupon = async () => {
+    if (!couponCode.trim() || !product) return;
+    setApplyingCoupon(true);
+    
+    const { data: coupon, error } = await supabase
+      .from("coupons")
+      .select("*")
+      .eq("code", couponCode.toUpperCase().trim())
+      .eq("is_active", true)
+      .maybeSingle();
+    
+    setApplyingCoupon(false);
+    
+    if (error || !coupon) {
+      toast.error("کوپن نامعتبر است");
+      return;
+    }
+    
+    // Check validity
+    if (coupon.valid_until && new Date(coupon.valid_until) < new Date()) {
+      toast.error("کوپن منقضی شده است");
+      return;
+    }
+    if (coupon.max_uses && coupon.used_count >= coupon.max_uses) {
+      toast.error("ظرفیت استفاده از کوپن تمام شده");
+      return;
+    }
+    if (coupon.min_purchase && product.price < coupon.min_purchase) {
+      toast.error(`حداقل خرید برای این کوپن ${formatPrice(coupon.min_purchase)} تومان است`);
+      return;
+    }
+    if (coupon.product_id && coupon.product_id !== product.id) {
+      toast.error("این کوپن برای این محصول قابل استفاده نیست");
+      return;
+    }
+    
+    // Calculate discount
+    let discountAmount = 0;
+    if (coupon.discount_type === "percentage") {
+      discountAmount = Math.floor((product.price * coupon.discount_value) / 100);
+    } else {
+      discountAmount = coupon.discount_value;
+    }
+    
+    setAppliedCoupon({ code: coupon.code, discount: discountAmount });
+    toast.success(`کوپن اعمال شد: ${formatPrice(discountAmount)} تومان تخفیف`);
+  };
+
+  const removeCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponCode("");
+  };
+
+  const finalPrice = product ? product.price - (appliedCoupon?.discount || 0) : 0;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
@@ -144,6 +202,7 @@ const Product = () => {
           product_id: product.id,
           customer_email: email,
           customer_phone: phone,
+          coupon_code: appliedCoupon?.code || null,
         },
       });
 
@@ -348,6 +407,39 @@ const Product = () => {
                         <p className="text-sm text-destructive">{errors.phone}</p>
                       )}
                     </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="coupon">کد تخفیف</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          id="coupon"
+                          value={couponCode}
+                          onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                          placeholder="کد تخفیف"
+                          disabled={!!appliedCoupon}
+                          dir="ltr"
+                        />
+                        {appliedCoupon ? (
+                          <Button type="button" variant="outline" onClick={removeCoupon}>حذف</Button>
+                        ) : (
+                          <Button type="button" variant="outline" onClick={applyCoupon} disabled={applyingCoupon || !couponCode}>
+                            اعمال
+                          </Button>
+                        )}
+                      </div>
+                      {appliedCoupon && (
+                        <p className="text-sm text-primary">
+                          {formatPrice(appliedCoupon.discount)} تومان تخفیف اعمال شد
+                        </p>
+                      )}
+                    </div>
+
+                    {appliedCoupon && (
+                      <div className="p-3 rounded-lg bg-primary/10 text-center">
+                        <p className="text-sm text-muted-foreground">مبلغ نهایی:</p>
+                        <p className="text-xl font-bold text-primary">{formatPrice(finalPrice)} تومان</p>
+                      </div>
+                    )}
 
                     <Button 
                       type="submit" 

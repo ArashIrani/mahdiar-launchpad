@@ -14,6 +14,101 @@ export type Database = {
   }
   public: {
     Tables: {
+      coupon_usages: {
+        Row: {
+          coupon_id: string
+          created_at: string
+          customer_email: string | null
+          discount_amount: number
+          id: string
+          order_id: string
+        }
+        Insert: {
+          coupon_id: string
+          created_at?: string
+          customer_email?: string | null
+          discount_amount: number
+          id?: string
+          order_id: string
+        }
+        Update: {
+          coupon_id?: string
+          created_at?: string
+          customer_email?: string | null
+          discount_amount?: number
+          id?: string
+          order_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coupon_usages_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "coupons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coupon_usages_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coupons: {
+        Row: {
+          code: string
+          created_at: string
+          discount_type: string
+          discount_value: number
+          id: string
+          is_active: boolean
+          max_uses: number | null
+          min_purchase: number | null
+          product_id: string | null
+          used_count: number
+          valid_from: string | null
+          valid_until: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          discount_type: string
+          discount_value: number
+          id?: string
+          is_active?: boolean
+          max_uses?: number | null
+          min_purchase?: number | null
+          product_id?: string | null
+          used_count?: number
+          valid_from?: string | null
+          valid_until?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          discount_type?: string
+          discount_value?: number
+          id?: string
+          is_active?: boolean
+          max_uses?: number | null
+          min_purchase?: number | null
+          product_id?: string | null
+          used_count?: number
+          valid_from?: string | null
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coupons_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       licenses: {
         Row: {
           activated_at: string | null
@@ -69,10 +164,13 @@ export type Database = {
         Row: {
           amount: number
           authority: string | null
+          coupon_id: string | null
           created_at: string
           customer_email: string | null
           customer_phone: string | null
+          discount_amount: number | null
           id: string
+          original_amount: number | null
           product_id: string
           ref_id: string | null
           status: string
@@ -81,10 +179,13 @@ export type Database = {
         Insert: {
           amount: number
           authority?: string | null
+          coupon_id?: string | null
           created_at?: string
           customer_email?: string | null
           customer_phone?: string | null
+          discount_amount?: number | null
           id?: string
+          original_amount?: number | null
           product_id: string
           ref_id?: string | null
           status?: string
@@ -93,16 +194,26 @@ export type Database = {
         Update: {
           amount?: number
           authority?: string | null
+          coupon_id?: string | null
           created_at?: string
           customer_email?: string | null
           customer_phone?: string | null
+          discount_amount?: number | null
           id?: string
+          original_amount?: number | null
           product_id?: string
           ref_id?: string | null
           status?: string
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "orders_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "coupons"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "orders_product_id_fkey"
             columns: ["product_id"]
@@ -144,8 +255,52 @@ export type Database = {
           },
         ]
       }
+      product_ratings: {
+        Row: {
+          comment: string | null
+          created_at: string
+          id: string
+          license_id: string
+          product_id: string
+          rating: number
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          license_id: string
+          product_id: string
+          rating: number
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          license_id?: string
+          product_id?: string
+          rating?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_ratings_license_id_fkey"
+            columns: ["license_id"]
+            isOneToOne: true
+            referencedRelation: "licenses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_ratings_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
+          average_rating: number | null
+          category: string | null
           created_at: string
           deep_link_scheme: string | null
           description: string | null
@@ -155,8 +310,12 @@ export type Database = {
           name: string
           original_price: number | null
           price: number
+          ratings_count: number
+          sales_count: number
         }
         Insert: {
+          average_rating?: number | null
+          category?: string | null
           created_at?: string
           deep_link_scheme?: string | null
           description?: string | null
@@ -166,8 +325,12 @@ export type Database = {
           name: string
           original_price?: number | null
           price: number
+          ratings_count?: number
+          sales_count?: number
         }
         Update: {
+          average_rating?: number | null
+          category?: string | null
           created_at?: string
           deep_link_scheme?: string | null
           description?: string | null
@@ -177,6 +340,8 @@ export type Database = {
           name?: string
           original_price?: number | null
           price?: number
+          ratings_count?: number
+          sales_count?: number
         }
         Relationships: []
       }
