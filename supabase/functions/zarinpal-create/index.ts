@@ -186,10 +186,11 @@ serve(async (req) => {
     });
 
     const zarinpalData = await zarinpalResponse.json();
-    console.log("ZarinPal response:", JSON.stringify(zarinpalData));
+    // Sanitized logging - only log status code, not full response
+    console.log("ZarinPal response code:", zarinpalData.data?.code);
 
     if (zarinpalData.data?.code !== 100) {
-      console.error("ZarinPal error:", zarinpalData.errors);
+      console.error("ZarinPal payment request failed");
       return new Response(
         JSON.stringify({ error: "خطا در اتصال به درگاه پرداخت" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -204,7 +205,7 @@ serve(async (req) => {
       .update({ authority })
       .eq("id", order.id);
 
-    console.log("Payment authority:", authority);
+    console.log("Payment initiated for order:", order.id);
 
     // Return payment URL
     const paymentUrl = `https://payment.zarinpal.com/pg/StartPay/${authority}`;

@@ -94,7 +94,7 @@ serve(async (req) => {
 
     if (existingUser) {
       // For existing users, generate a new secure password and update
-      console.log(`Updating password for existing user: ${email}`);
+      console.log("Updating password for existing user");
       const newPassword = generateSecurePassword();
       
       const { error: updateError } = await supabase.auth.admin.updateUserById(
@@ -128,7 +128,7 @@ serve(async (req) => {
       user = data.user;
     } else {
       // ثبت‌نام کاربر جدید با رمز امن
-      console.log(`Creating new user: ${email}`);
+      console.log("Creating new user");
       const securePassword = generateSecurePassword();
       
       const { data: newUserData, error: signUpError } = await supabase.auth.admin.createUser({
@@ -171,7 +171,7 @@ serve(async (req) => {
     // SECURITY FIX: Delete OTP immediately after successful authentication
     await supabase.from("otp_codes").delete().eq("id", otpRecord.id);
     
-    console.log(`User authenticated: ${email}`);
+    console.log("User authenticated successfully");
 
     return new Response(
       JSON.stringify({ 

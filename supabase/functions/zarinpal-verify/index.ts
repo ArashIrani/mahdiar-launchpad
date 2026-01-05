@@ -39,7 +39,7 @@ serve(async (req) => {
   try {
     const { order_id, authority, status }: VerifyPaymentRequest = await req.json();
 
-    console.log("Verifying payment - Order:", order_id, "Authority:", authority, "Status:", status);
+    console.log("Verifying payment for order:", order_id);
 
     // Check if payment was cancelled
     if (status !== "OK") {
@@ -108,11 +108,12 @@ serve(async (req) => {
     });
 
     const zarinpalData = await zarinpalResponse.json();
-    console.log("ZarinPal verify response:", JSON.stringify(zarinpalData));
+    // Sanitized logging - only log verification code
+    console.log("ZarinPal verify response code:", zarinpalData.data?.code);
 
     // Check if verification was successful (100 = success, 101 = already verified)
     if (zarinpalData.data?.code !== 100 && zarinpalData.data?.code !== 101) {
-      console.error("ZarinPal verification failed:", zarinpalData.errors);
+      console.error("ZarinPal verification failed");
       
       // Update order status to failed
       await supabase
@@ -127,7 +128,7 @@ serve(async (req) => {
     }
 
     const refId = zarinpalData.data.ref_id.toString();
-    console.log("Payment verified, ref_id:", refId);
+    console.log("Payment verified for order:", order.id);
 
     // Update order to completed
     await supabase
@@ -188,7 +189,7 @@ serve(async (req) => {
       );
     }
 
-    console.log("License created:", licenseKey);
+    console.log("License created for order:", order.id);
 
     return new Response(
       JSON.stringify({ 
