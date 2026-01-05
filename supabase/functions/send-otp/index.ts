@@ -11,6 +11,10 @@ function generateOTP(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
+// Rate limit settings
+const MAX_ATTEMPTS_PER_PHONE = 3; // Max 3 attempts per phone per hour
+const RATE_LIMIT_WINDOW_MINUTES = 60; // 1 hour window
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -32,18 +36,42 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
+    // Rate limiting check - count recent OTP requests for this phone
+    const windowStart = new Date(Date.now() - RATE_LIMIT_WINDOW_MINUTES * 60 * 1000);
+    
+    const { count: recentAttempts, error: countError } = await supabase
+      .from("otp_codes")
+      .select("*", { count: "exact", head: true })
+      .eq("phone", phone)
+      .gte("created_at", windowStart.toISOString());
+
+    if (countError) {
+      console.error("Rate limit check error:", countError);
+    }
+
+    // Check rate limit
+    if (recentAttempts !== null && recentAttempts >= MAX_ATTEMPTS_PER_PHONE) {
+      console.log(`Rate limit exceeded for ${phone}: ${recentAttempts} attempts`);
+      return new Response(
+        JSON.stringify({ 
+          error: "تعداد درخواست‌های شما بیش از حد مجاز است. لطفاً یک ساعت دیگر تلاش کنید" 
+        }),
+        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const otp = generateOTP();
     const expiresAt = new Date(Date.now() + 2 * 60 * 1000); // ۲ دقیقه
 
-    // ذخیره OTP در دیتابیس (upsert برای جلوگیری از تکرار)
+    // ذخیره OTP در دیتابیس (insert instead of upsert to track attempts)
     const { error: dbError } = await supabase
       .from("otp_codes")
-      .upsert({
+      .insert({
         phone,
         code: otp,
         expires_at: expiresAt.toISOString(),
         verified: false,
-      }, { onConflict: 'phone' });
+      });
 
     if (dbError) {
       console.error("Database error:", dbError);
@@ -59,20 +87,13 @@ serve(async (req) => {
     const smsSender = Deno.env.get("SMS_SENDER_NUMBER");
 
     if (!smsApiKey || !smsPassword || !smsSender) {
-      console.error("SMS credentials not configured");
-      // در حالت توسعه، کد رو لاگ می‌کنیم
-      console.log("========================================");
-      console.log(`📱 OTP Code for ${phone}: ${otp}`);
-      console.log("========================================");
-      
+      console.error("SMS credentials not configured - cannot send OTP");
+      // SECURITY FIX: Return error instead of exposing OTP code
       return new Response(
         JSON.stringify({ 
-          success: true, 
-          message: "کد تأیید ارسال شد",
-          // فقط در حالت توسعه - بعداً حذف شود
-          dev_code: otp 
+          error: "سرویس پیامک موقتاً در دسترس نیست. لطفاً بعداً تلاش کنید" 
         }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 

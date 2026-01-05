@@ -6,6 +6,25 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Input validation functions
+function isValidEmail(email: string): boolean {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email) && email.length <= 255;
+}
+
+function isValidPhone(phone: string): boolean {
+  return /^09\d{9}$/.test(phone);
+}
+
+function isValidUUID(id: string): boolean {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(id);
+}
+
+function sanitizeString(str: string): string {
+  return str.trim().slice(0, 500); // Limit length and trim
+}
+
 interface CreatePaymentRequest {
   product_id: string;
   customer_email: string;
@@ -20,13 +39,44 @@ serve(async (req) => {
   }
 
   try {
-    const { product_id, customer_email, customer_phone, coupon_code }: CreatePaymentRequest = await req.json();
+    const body = await req.json();
+    
+    // Extract and sanitize inputs
+    const product_id = typeof body.product_id === 'string' ? body.product_id.trim() : '';
+    const customer_email = typeof body.customer_email === 'string' ? body.customer_email.trim().toLowerCase() : '';
+    const customer_phone = typeof body.customer_phone === 'string' ? body.customer_phone.replace(/\s+/g, '') : '';
+    const coupon_code = typeof body.coupon_code === 'string' ? body.coupon_code.trim().toUpperCase() : null;
 
-    console.log("Creating payment for product:", product_id, "email:", customer_email);
+    console.log("Creating payment for product:", product_id);
 
+    // Validate required fields
     if (!product_id || !customer_email || !customer_phone) {
       return new Response(
         JSON.stringify({ error: "اطلاعات ناقص است" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Validate product_id format
+    if (!isValidUUID(product_id)) {
+      return new Response(
+        JSON.stringify({ error: "شناسه محصول نامعتبر است" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Validate email format
+    if (!isValidEmail(customer_email)) {
+      return new Response(
+        JSON.stringify({ error: "ایمیل نامعتبر است" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Validate phone format
+    if (!isValidPhone(customer_phone)) {
+      return new Response(
+        JSON.stringify({ error: "شماره موبایل نامعتبر است. فرمت صحیح: 09123456789" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -55,11 +105,11 @@ serve(async (req) => {
     let couponId = null;
 
     // Validate coupon if provided
-    if (coupon_code) {
+    if (coupon_code && coupon_code.length > 0 && coupon_code.length <= 50) {
       const { data: coupon } = await supabase
         .from("coupons")
         .select("*")
-        .eq("code", coupon_code.toUpperCase())
+        .eq("code", coupon_code)
         .eq("is_active", true)
         .maybeSingle();
 
@@ -86,13 +136,13 @@ serve(async (req) => {
       }
     }
 
-    // Create order in database
+    // Create order in database with sanitized inputs
     const { data: order, error: orderError } = await supabase
       .from("orders")
       .insert({
         product_id: product.id,
-        customer_email,
-        customer_phone,
+        customer_email: sanitizeString(customer_email),
+        customer_phone: customer_phone,
         amount: finalAmount,
         original_amount: product.price,
         discount_amount: discountAmount,
