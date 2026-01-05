@@ -1,10 +1,18 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { encodeBase64 } from "https://deno.land/std@0.190.0/encoding/base64.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+// Generate cryptographically secure password
+function generateSecurePassword(): string {
+  const bytes = new Uint8Array(32);
+  crypto.getRandomValues(bytes);
+  return encodeBase64(bytes);
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -67,35 +75,46 @@ serve(async (req) => {
 
     // بررسی انقضا
     if (new Date(otpRecord.expires_at) < new Date()) {
+      // Delete expired OTP immediately
+      await supabase.from("otp_codes").delete().eq("id", otpRecord.id);
       return new Response(
         JSON.stringify({ error: "کد تأیید منقضی شده است. لطفاً کد جدید دریافت کنید" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // علامت‌گذاری به عنوان تأیید شده
-    await supabase
-      .from("otp_codes")
-      .update({ verified: true })
-      .eq("id", otpRecord.id);
-
     // ایجاد یا ورود کاربر با ایمیل مجازی
     const email = `${phone}@sms.mahdyar.ir`;
-    const password = `SMS_${phone}_${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")?.slice(0, 16)}`;
 
     // بررسی آیا کاربر وجود دارد
     const { data: existingUsers } = await supabase.auth.admin.listUsers();
-    const userExists = existingUsers?.users?.find(u => u.email === email);
+    const existingUser = existingUsers?.users?.find(u => u.email === email);
 
     let session = null;
     let user = null;
 
-    if (userExists) {
-      // ورود کاربر موجود
-      console.log(`Signing in existing user: ${email}`);
+    if (existingUser) {
+      // For existing users, generate a new secure password and update
+      console.log(`Updating password for existing user: ${email}`);
+      const newPassword = generateSecurePassword();
+      
+      const { error: updateError } = await supabase.auth.admin.updateUserById(
+        existingUser.id,
+        { password: newPassword }
+      );
+      
+      if (updateError) {
+        console.error("Password update error:", updateError);
+        return new Response(
+          JSON.stringify({ error: "خطا در ورود. لطفاً دوباره تلاش کنید" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      
+      // ورود کاربر با رمز جدید
       const { data, error: signInError } = await supabase.auth.signInWithPassword({
         email,
-        password,
+        password: newPassword,
       });
       
       if (signInError) {
@@ -109,11 +128,13 @@ serve(async (req) => {
       session = data.session;
       user = data.user;
     } else {
-      // ثبت‌نام کاربر جدید
+      // ثبت‌نام کاربر جدید با رمز امن
       console.log(`Creating new user: ${email}`);
+      const securePassword = generateSecurePassword();
+      
       const { data: newUserData, error: signUpError } = await supabase.auth.admin.createUser({
         email,
-        password,
+        password: securePassword,
         email_confirm: true,
         user_metadata: { 
           phone,
@@ -134,7 +155,7 @@ serve(async (req) => {
       // ورود بعد از ثبت‌نام
       const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
         email,
-        password,
+        password: securePassword,
       });
       
       if (loginError) {
@@ -148,6 +169,9 @@ serve(async (req) => {
       session = loginData.session;
     }
 
+    // SECURITY FIX: Delete OTP immediately after successful authentication
+    await supabase.from("otp_codes").delete().eq("id", otpRecord.id);
+    
     console.log(`User authenticated: ${email}`);
 
     return new Response(
@@ -155,7 +179,7 @@ serve(async (req) => {
         success: true, 
         session,
         user,
-        message: userExists ? "ورود موفق" : "ثبت‌نام و ورود موفق"
+        message: existingUser ? "ورود موفق" : "ثبت‌نام و ورود موفق"
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
