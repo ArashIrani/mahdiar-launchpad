@@ -1,6 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { encodeBase64 } from "https://deno.land/std@0.190.0/encoding/base64.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -11,7 +10,7 @@ const corsHeaders = {
 function generateSecurePassword(): string {
   const bytes = new Uint8Array(32);
   crypto.getRandomValues(bytes);
-  return encodeBase64(bytes);
+  return btoa(String.fromCharCode(...bytes));
 }
 
 serve(async (req) => {
