@@ -1,10 +1,22 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+// CORS configuration - restrict to allowed origins
+const ALLOWED_ORIGINS = [
+  'https://dybyqtqfovvtknllpuzs.lovableproject.com',
+  'http://localhost:5173',
+  'http://localhost:8080',
+];
+
+function getCorsHeaders(req: Request) {
+  const origin = req.headers.get('origin') || '';
+  const isAllowed = ALLOWED_ORIGINS.includes(origin) || origin.endsWith('.lovableproject.com');
+  
+  return {
+    'Access-Control-Allow-Origin': isAllowed ? origin : ALLOWED_ORIGINS[0],
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  };
+}
 
 // Generate a unique license key
 function generateLicenseKey(): string {
@@ -31,6 +43,8 @@ interface VerifyPaymentRequest {
 }
 
 serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req);
+  
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -139,27 +153,15 @@ serve(async (req) => {
       })
       .eq("id", order.id);
 
-    // Increment sales_count on product
-    await supabase
-      .from("products")
-      .update({ sales_count: (order.products?.sales_count || 0) + 1 })
-      .eq("id", order.product_id);
+    // SECURITY FIX: Use atomic increment for sales_count
+    await supabase.rpc('increment_sales_count', { product_uuid: order.product_id });
 
-    // Update coupon usage if applicable
+    // Update coupon usage if applicable using atomic increment
     if (order.coupon_id) {
-      const { data: couponData } = await supabase
-        .from("coupons")
-        .select("used_count")
-        .eq("id", order.coupon_id)
-        .single();
+      // SECURITY FIX: Use atomic increment for coupon used_count
+      await supabase.rpc('increment_coupon_usage', { coupon_uuid: order.coupon_id });
       
-      if (couponData) {
-        await supabase
-          .from("coupons")
-          .update({ used_count: (couponData.used_count || 0) + 1 })
-          .eq("id", order.coupon_id);
-      }
-      
+      // Insert coupon usage record (unique constraint on order_id prevents duplicates)
       await supabase.from("coupon_usages").insert({
         coupon_id: order.coupon_id,
         order_id: order.id,
@@ -204,6 +206,7 @@ serve(async (req) => {
 
   } catch (error) {
     console.error("Error in zarinpal-verify:", error);
+    const corsHeaders = getCorsHeaders(req);
     return new Response(
       JSON.stringify({ success: false, error: "خطای سرور" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
