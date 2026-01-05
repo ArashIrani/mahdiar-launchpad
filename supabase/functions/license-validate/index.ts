@@ -15,7 +15,7 @@ serve(async (req) => {
   try {
     const { license_key, device_id } = await req.json();
 
-    console.log("License validation request:", { license_key, device_id });
+    console.log("License validation request received");
 
     // Validate input
     if (!license_key || typeof license_key !== "string") {
@@ -56,14 +56,14 @@ serve(async (req) => {
 
     // License not found
     if (!license) {
-      console.log("License not found:", license_key);
+      console.log("License not found");
       return new Response(
         JSON.stringify({ valid: false, error: "Invalid license key" }),
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log("License found:", { id: license.id, status: license.status, device_id: license.device_id });
+    console.log("License found with status:", license.status);
 
     // Check if license is revoked
     if (license.status === "revoked") {
@@ -85,7 +85,7 @@ serve(async (req) => {
 
     // Check device binding
     if (license.device_id && license.device_id !== device_id) {
-      console.log("License already activated on another device:", license.device_id);
+      console.log("License already activated on another device");
       return new Response(
         JSON.stringify({ 
           valid: false, 
@@ -98,7 +98,7 @@ serve(async (req) => {
 
     // First time activation - bind device
     if (!license.device_id) {
-      console.log("First activation, binding device:", device_id);
+      console.log("First activation, binding device");
       const { error: updateError } = await supabase
         .from("licenses")
         .update({ 
@@ -132,10 +132,10 @@ serve(async (req) => {
         name: license.products.name,
         description: license.products.description,
         deep_link_scheme: license.products.deep_link_scheme,
-      } : null,
+    } : null,
     };
 
-    console.log("Validation successful:", response);
+    console.log("Validation successful for license:", license.id);
 
     return new Response(
       JSON.stringify(response),

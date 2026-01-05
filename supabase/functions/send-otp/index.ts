@@ -46,12 +46,12 @@ serve(async (req) => {
       .gte("created_at", windowStart.toISOString());
 
     if (countError) {
-      console.error("Rate limit check error:", countError);
+      console.error("Rate limit check error");
     }
 
     // Check rate limit
     if (recentAttempts !== null && recentAttempts >= MAX_ATTEMPTS_PER_PHONE) {
-      console.log(`Rate limit exceeded for ${phone}: ${recentAttempts} attempts`);
+      console.log("Rate limit exceeded for phone");
       return new Response(
         JSON.stringify({ 
           error: "تعداد درخواست‌های شما بیش از حد مجاز است. لطفاً یک ساعت دیگر تلاش کنید" 
@@ -112,25 +112,26 @@ serve(async (req) => {
       });
 
       const smsResult = await smsResponse.text();
-      console.log("SMS API Response:", smsResult);
+      // Sanitized logging - don't log full API response
+      console.log("SMS API responded with status:", smsResponse.status);
 
       // بررسی پاسخ API
       if (smsResult.includes("error") || smsResult.includes("Error")) {
-        console.error("SMS sending failed:", smsResult);
+        console.error("SMS sending failed");
         return new Response(
           JSON.stringify({ error: "خطا در ارسال پیامک. لطفاً دوباره تلاش کنید" }),
           { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
     } catch (smsError) {
-      console.error("SMS Error:", smsError);
+      console.error("SMS connection error");
       return new Response(
         JSON.stringify({ error: "خطا در اتصال به سرویس پیامک" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log(`OTP sent to ${phone}`);
+    console.log("OTP sent successfully");
 
     return new Response(
       JSON.stringify({ success: true, message: "کد تأیید ارسال شد" }),
