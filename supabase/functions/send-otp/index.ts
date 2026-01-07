@@ -4,6 +4,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 // CORS configuration - restrict to allowed origins
 const ALLOWED_ORIGINS = [
   'https://dybyqtqfovvtknllpuzs.lovableproject.com',
+  'https://yourdomain.com',
+  'https://www.yourdomain.com',
   'http://localhost:5173',
   'http://localhost:8080',
 ];
@@ -21,6 +23,14 @@ function getCorsHeaders(req: Request) {
 // تولید کد ۶ رقمی
 function generateOTP(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+// هش کردن OTP برای ذخیره امن
+async function hashOTP(otp: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(otp);
+  const hash = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
 // Rate limit settings
@@ -75,14 +85,15 @@ serve(async (req) => {
     }
 
     const otp = generateOTP();
+    const hashedOtp = await hashOTP(otp);
     const expiresAt = new Date(Date.now() + 2 * 60 * 1000); // ۲ دقیقه
 
-    // ذخیره OTP در دیتابیس (insert instead of upsert to track attempts)
+    // ذخیره OTP هش شده در دیتابیس
     const { error: dbError } = await supabase
       .from("otp_codes")
       .insert({
         phone,
-        code: otp,
+        code: hashedOtp, // ذخیره هش شده
         expires_at: expiresAt.toISOString(),
         verified: false,
       });
