@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "@/components/ui/sonner";
 import { Loader2 } from "lucide-react";
+import { z } from "zod";
 
 interface Product {
   id: string;
@@ -50,6 +51,43 @@ interface CouponDialogProps {
   onSuccess: () => void;
 }
 
+// Zod schema for coupon validation
+const couponSchema = z.object({
+  code: z.string()
+    .trim()
+    .min(1, "کد کوپن الزامی است")
+    .max(50, "کد کوپن حداکثر ۵۰ کاراکتر")
+    .regex(/^[A-Z0-9]+$/, "کد کوپن فقط حروف انگلیسی و اعداد"),
+  discount_type: z.enum(["percentage", "fixed"], {
+    errorMap: () => ({ message: "نوع تخفیف نامعتبر" })
+  }),
+  discount_value: z.number()
+    .positive("مقدار تخفیف باید بزرگتر از صفر باشد")
+    .max(100000000, "مقدار تخفیف خیلی بزرگ است"),
+  min_purchase: z.number().nonnegative("حداقل خرید نمی‌تواند منفی باشد").nullable(),
+  max_uses: z.number().positive("حداکثر استفاده باید بزرگتر از صفر باشد").max(1000000, "حداکثر استفاده خیلی بزرگ است").nullable(),
+  valid_from: z.date().nullable(),
+  valid_until: z.date().nullable(),
+  is_active: z.boolean(),
+  product_id: z.string().nullable(),
+}).refine(
+  (data) => {
+    if (data.discount_type === "percentage" && data.discount_value > 100) {
+      return false;
+    }
+    return true;
+  },
+  { message: "درصد تخفیف نمی‌تواند بیشتر از ۱۰۰ باشد", path: ["discount_value"] }
+).refine(
+  (data) => {
+    if (data.valid_from && data.valid_until) {
+      return data.valid_from <= data.valid_until;
+    }
+    return true;
+  },
+  { message: "تاریخ شروع باید قبل از تاریخ پایان باشد", path: ["valid_until"] }
+);
+
 const CouponDialog = ({ open, onOpenChange, coupon, mode, products, onSuccess }: CouponDialogProps) => {
   const [loading, setLoading] = useState(false);
   const [code, setCode] = useState("");
@@ -61,9 +99,11 @@ const CouponDialog = ({ open, onOpenChange, coupon, mode, products, onSuccess }:
   const [validUntil, setValidUntil] = useState("");
   const [isActive, setIsActive] = useState(true);
   const [productId, setProductId] = useState<string>("all");
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (open) {
+      setErrors({});
       if (mode === "edit" && coupon) {
         setCode(coupon.code);
         setDiscountType(coupon.discount_type);
@@ -98,31 +138,50 @@ const CouponDialog = ({ open, onOpenChange, coupon, mode, products, onSuccess }:
   };
 
   const handleSubmit = async () => {
-    if (!code.trim()) {
-      toast.error("کد کوپن را وارد کنید");
-      return;
-    }
-    if (!discountValue || parseInt(discountValue) <= 0) {
-      toast.error("مقدار تخفیف را وارد کنید");
-      return;
-    }
-    if (discountType === "percentage" && parseInt(discountValue) > 100) {
-      toast.error("درصد تخفیف نمی‌تواند بیشتر از ۱۰۰ باشد");
+    setErrors({});
+
+    // Prepare data for validation
+    const dataToValidate = {
+      code: code.toUpperCase().trim(),
+      discount_type: discountType as "percentage" | "fixed",
+      discount_value: discountValue ? parseInt(discountValue) : 0,
+      min_purchase: minPurchase ? parseInt(minPurchase) : null,
+      max_uses: maxUses ? parseInt(maxUses) : null,
+      valid_from: validFrom ? new Date(validFrom) : null,
+      valid_until: validUntil ? new Date(validUntil) : null,
+      is_active: isActive,
+      product_id: productId === "all" ? null : productId,
+    };
+
+    // Validate with Zod
+    const result = couponSchema.safeParse(dataToValidate);
+    
+    if (!result.success) {
+      const fieldErrors: Record<string, string> = {};
+      result.error.errors.forEach((err) => {
+        const field = err.path[0] as string;
+        fieldErrors[field] = err.message;
+      });
+      setErrors(fieldErrors);
+      
+      // Show first error as toast
+      const firstError = result.error.errors[0];
+      toast.error(firstError.message);
       return;
     }
 
     setLoading(true);
 
     const couponData = {
-      code: code.toUpperCase().trim(),
-      discount_type: discountType,
-      discount_value: parseInt(discountValue),
-      min_purchase: minPurchase ? parseInt(minPurchase) : null,
-      max_uses: maxUses ? parseInt(maxUses) : null,
-      valid_from: validFrom ? new Date(validFrom).toISOString() : null,
-      valid_until: validUntil ? new Date(validUntil).toISOString() : null,
-      is_active: isActive,
-      product_id: productId === "all" ? null : productId,
+      code: result.data.code,
+      discount_type: result.data.discount_type,
+      discount_value: result.data.discount_value,
+      min_purchase: result.data.min_purchase,
+      max_uses: result.data.max_uses,
+      valid_from: result.data.valid_from?.toISOString() || null,
+      valid_until: result.data.valid_until?.toISOString() || null,
+      is_active: result.data.is_active,
+      product_id: result.data.product_id,
     };
 
     let error;
@@ -179,11 +238,13 @@ const CouponDialog = ({ open, onOpenChange, coupon, mode, products, onSuccess }:
                 onChange={(e) => setCode(e.target.value.toUpperCase())}
                 placeholder="مثال: SUMMER20"
                 dir="ltr"
+                className={errors.code ? "border-destructive" : ""}
               />
               <Button type="button" variant="outline" onClick={generateCode}>
                 تولید
               </Button>
             </div>
+            {errors.code && <p className="text-sm text-destructive">{errors.code}</p>}
           </div>
 
           {/* Discount Type & Value */}
@@ -191,7 +252,7 @@ const CouponDialog = ({ open, onOpenChange, coupon, mode, products, onSuccess }:
             <div className="space-y-2">
               <Label>نوع تخفیف</Label>
               <Select value={discountType} onValueChange={setDiscountType}>
-                <SelectTrigger>
+                <SelectTrigger className={errors.discount_type ? "border-destructive" : ""}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -211,7 +272,9 @@ const CouponDialog = ({ open, onOpenChange, coupon, mode, products, onSuccess }:
                 onChange={(e) => setDiscountValue(e.target.value)}
                 placeholder={discountType === "percentage" ? "20" : "50000"}
                 dir="ltr"
+                className={errors.discount_value ? "border-destructive" : ""}
               />
+              {errors.discount_value && <p className="text-sm text-destructive">{errors.discount_value}</p>}
             </div>
           </div>
 
@@ -225,7 +288,9 @@ const CouponDialog = ({ open, onOpenChange, coupon, mode, products, onSuccess }:
               onChange={(e) => setMinPurchase(e.target.value)}
               placeholder="اختیاری"
               dir="ltr"
+              className={errors.min_purchase ? "border-destructive" : ""}
             />
+            {errors.min_purchase && <p className="text-sm text-destructive">{errors.min_purchase}</p>}
           </div>
 
           {/* Max Uses */}
@@ -238,7 +303,9 @@ const CouponDialog = ({ open, onOpenChange, coupon, mode, products, onSuccess }:
               onChange={(e) => setMaxUses(e.target.value)}
               placeholder="نامحدود"
               dir="ltr"
+              className={errors.max_uses ? "border-destructive" : ""}
             />
+            {errors.max_uses && <p className="text-sm text-destructive">{errors.max_uses}</p>}
           </div>
 
           {/* Validity Period */}
@@ -261,7 +328,9 @@ const CouponDialog = ({ open, onOpenChange, coupon, mode, products, onSuccess }:
                 value={validUntil}
                 onChange={(e) => setValidUntil(e.target.value)}
                 dir="ltr"
+                className={errors.valid_until ? "border-destructive" : ""}
               />
+              {errors.valid_until && <p className="text-sm text-destructive">{errors.valid_until}</p>}
             </div>
           </div>
 

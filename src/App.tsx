@@ -11,6 +11,7 @@ import Products from "./pages/Products";
 import PaymentVerify from "./pages/PaymentVerify";
 import Auth from "./pages/Auth";
 import Admin from "./pages/Admin";
+import MyLicenses from "./pages/MyLicenses";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
 import Refund from "./pages/Refund";
@@ -33,6 +34,7 @@ const App = () => (
             <Route path="/payment/verify" element={<PaymentVerify />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/admin" element={<Admin />} />
+            <Route path="/my-licenses" element={<MyLicenses />} />
             <Route path="/terms" element={<Terms />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/refund" element={<Refund />} />
