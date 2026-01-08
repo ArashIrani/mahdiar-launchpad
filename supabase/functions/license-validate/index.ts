@@ -6,6 +6,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 // but still validate and log unexpected origins
 const ALLOWED_ORIGINS = [
   'https://dybyqtqfovvtknllpuzs.lovableproject.com',
+  'https://yourdomain.com',
+  'https://www.yourdomain.com',
   'http://localhost:5173',
   'http://localhost:8080',
 ];

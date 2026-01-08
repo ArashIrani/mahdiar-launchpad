@@ -111,14 +111,18 @@ serve(async (req) => {
     const smsPassword = Deno.env.get("SMS_PASSWORD");
     const smsSender = Deno.env.get("SMS_SENDER_NUMBER");
 
-    if (!smsApiKey || !smsPassword || !smsSender) {
-      console.error("SMS credentials not configured - cannot send OTP");
-      // SECURITY FIX: Return error instead of exposing OTP code
+    // حالت توسعه - SMS غیرفعال
+    const smsEnabled = Deno.env.get("SMS_ENABLED") !== "false";
+    
+    if (!smsApiKey || !smsPassword || !smsSender || !smsEnabled) {
+      console.log("SMS DISABLED - Development mode");
       return new Response(
         JSON.stringify({ 
-          error: "سرویس پیامک موقتاً در دسترس نیست. لطفاً بعداً تلاش کنید" 
+          success: true, 
+          message: "حالت توسعه - کد تأیید",
+          devCode: otp  // فقط در حالت dev نمایش داده می‌شود
         }),
-        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 

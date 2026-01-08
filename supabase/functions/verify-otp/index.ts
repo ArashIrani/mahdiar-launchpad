@@ -20,6 +20,14 @@ function getCorsHeaders(req: Request) {
   };
 }
 
+// هش کردن OTP برای مقایسه امن
+async function hashOTP(otp: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(otp);
+  const hash = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
 // Generate cryptographically secure password
 function generateSecurePassword(): string {
   const bytes = new Uint8Array(32);
@@ -64,12 +72,15 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
+    // هش کردن کد دریافتی برای مقایسه با هش ذخیره شده
+    const hashedCode = await hashOTP(code);
+    
     // بررسی کد OTP
     const { data: otpRecord, error: otpError } = await supabase
       .from("otp_codes")
       .select("*")
       .eq("phone", phone)
-      .eq("code", code)
+      .eq("code", hashedCode)
       .eq("verified", false)
       .maybeSingle();
 
