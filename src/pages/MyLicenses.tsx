@@ -61,6 +61,7 @@ const MyLicenses = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [dataLoading, setDataLoading] = useState(false);
   const [countdown, setCountdown] = useState(0);
+  const [devCode, setDevCode] = useState<string | null>(null);
 
   // Check if already authenticated
   useEffect(() => {
@@ -129,7 +130,14 @@ const MyLicenses = () => {
 
       setOtpSent(true);
       setCountdown(120);
-      toast.success("کد تأیید ارسال شد");
+      
+      // حالت توسعه - نمایش کد OTP
+      if (data?.devCode) {
+        setDevCode(data.devCode);
+        toast.success(`حالت توسعه - کد: ${data.devCode}`);
+      } else {
+        toast.success("کد تأیید ارسال شد");
+      }
     } catch (error: any) {
       toast.error(error.message || "خطا در ارسال کد");
     } finally {
@@ -258,6 +266,12 @@ const MyLicenses = () => {
                   <>
                     <div className="space-y-2 text-center">
                       <label className="text-sm font-medium">کد تأیید ارسال شده به {phone}</label>
+                      {devCode && (
+                        <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3 text-center">
+                          <p className="text-yellow-600 text-sm font-medium">حالت توسعه</p>
+                          <p className="text-2xl font-bold font-mono" dir="ltr">{devCode}</p>
+                        </div>
+                      )}
                       <div className="flex justify-center" dir="ltr">
                         <InputOTP maxLength={6} value={otp} onChange={setOtp}>
                           <InputOTPGroup>
